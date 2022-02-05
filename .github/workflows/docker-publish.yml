@@ -34,10 +34,10 @@ jobs:
         with:
           images: driessamyn/kafkasnoop
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      - name: Push Docker image
+        uses: akhilerm/tag-push-action@v2.0.0
         with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          with:
+            src: driessamyn/kafkasnoop
+            dst: |
+              ${{ steps.meta.outputs.tags }}
