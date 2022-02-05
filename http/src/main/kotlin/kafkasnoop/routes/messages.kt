@@ -6,8 +6,6 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import kafkasnoop.KafkaClientFactory
-import kafkasnoop.dto.Message
-import kafkasnoop.dto.WebSocketMessage
 
 fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
 
@@ -18,16 +16,13 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
             // todo: take partition, limit and offset from query string
             val offset = 0L
 
-            val msgProcessor = MessageProcessor(kafkaClientFactory, topicName, offset)
-
-            while (true) {
-                msgProcessor.partitions.forEach { p ->
-                    msgProcessor.getMessages(p).forEach { m ->
+            kafkaClientFactory.createConsumer().use { consumer ->
+                MessageProcessor(consumer, topicName, offset)
+                    .startProcess().forEach {
                         send(
-                            Frame.Text(WebSocketMessage(p.toString(), m.key, m.value).toString())
+                            Frame.Text(it.toString())
                         )
                     }
-                }
             }
         }
     }
@@ -40,21 +35,10 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
             val maxMsg = 100
             val offset = 0L
 
-            val msgProcessor = MessageProcessor(kafkaClientFactory, topicName, offset)
-
-            kafkaClientFactory.getOrCreateConsumer().let { consumer ->
-                val endOffsets = consumer.endOffsets(msgProcessor.partitions)
-
-                val response = msgProcessor.partitions.map { p ->
-                    val messages = mutableListOf<Message>()
-                    val latestOffset = endOffsets[p]?.minus(1) ?: 0
-                    while (messages.count() < maxMsg && consumer.position(p) < latestOffset) {
-                        messages.addAll(msgProcessor.getMessages(p))
-                    }
-
-                    p to messages
-                }
-                respond(response.toMap())
+            kafkaClientFactory.createConsumer().use { consumer ->
+                val msgs = MessageProcessor(consumer, topicName, offset)
+                    .startProcess(maxMsg).toList()
+                respond(msgs)
             }
         }
     }
