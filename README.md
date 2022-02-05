@@ -1,3 +1,5 @@
+[![Build](https://github.com/driessamyn/kafkasnoop/actions/workflows/gradle.yml/badge.svg)](https://github.com/driessamyn/kafkasnoop/actions/workflows/gradle.yml)
+
 # kafkasnoop
 
 Frictionless kafka message snooping for testing and debugging.
