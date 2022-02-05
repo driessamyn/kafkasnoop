@@ -12,7 +12,7 @@ fun Route.topics(kafkaClientFactory: KafkaClientFactory) {
         call.run {
             respond(
                 kafkaClientFactory
-                    .getOrCreateConsumer().let {
+                    .createConsumer().use {
                         it.listTopics()
                             .map { t ->
                                 Topic(

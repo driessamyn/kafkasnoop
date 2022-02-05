@@ -26,7 +26,6 @@ class StartSnoop : CliktCommand() {
         val kafkaClientOptions = (
             mapOf(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to brokerAddress,
-                ConsumerConfig.GROUP_ID_CONFIG to "kafkasnoop",
                 ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to "false",
                 ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java.name,
@@ -39,7 +38,7 @@ class StartSnoop : CliktCommand() {
 
         logger.info("Starting with $kafkaClientOptions")
 
-        KafkaClientFactory(kafkaClientOptions).use {
+        KafkaClientFactory(kafkaClientOptions).let {
             Server(it).start(port)
         }
     }
