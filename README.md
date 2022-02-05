@@ -22,9 +22,11 @@ There are 2 components to KafkaSnoop:
 
 KafkaSnoop is designed to work with as minimal configuration or customisation as possible. For example, if all messages are in JSON format, simply start up the KafkaSnoop HTTP component pointed to your Kafka Broker and _it will work_.
 
+```shell
+kafkasnoop.http --broker localhost:9092
 ```
-kafkasnoop-TBC --broker localhost:9092
-```
+
+or see the [docker example](examples/simple-json/README.md).
 
 ### What if I don't use JSON
 

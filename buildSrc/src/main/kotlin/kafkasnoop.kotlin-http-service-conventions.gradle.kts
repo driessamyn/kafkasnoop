@@ -1,0 +1,21 @@
+plugins {
+    // Apply the common convention plugin for shared build configuration between library and application projects.
+    id("kafkasnoop.kotlin-common-conventions")
+
+    // Apply the application plugin to add support for building a CLI application in Java.
+    application
+}
+
+dependencies {
+    implementation("com.github.ajalt.clikt:clikt:3.4.+")
+
+    implementation("io.ktor:ktor-server-core:1.6.+")
+    implementation("io.ktor:ktor-server-netty:1.6.+")
+    implementation("io.ktor:ktor-websockets:1.6.+")
+    implementation("io.ktor:ktor-gson:1.6.+")
+
+    implementation("org.apache.kafka:kafka-clients:3.1.+")
+    implementation("org.apache.kafka:kafka-streams:3.1.+")
+
+    runtimeOnly("ch.qos.logback:logback-classic:1.2.+")
+}
