@@ -24,6 +24,12 @@ dependencies {
 
 version = "0.0.1"
 
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
