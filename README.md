@@ -1,4 +1,4 @@
-[![Build](https://github.com/driessamyn/kafkasnoop/actions/workflows/gradle.yml/badge.svg)](https://github.com/driessamyn/kafkasnoop/actions/workflows/gradle.yml)
+[![Build](https://github.com/driessamyn/kafkasnoop/actions/workflows/gradle.yml/badge.svg)](https://github.com/driessamyn/kafkasnoop/actions/workflows/gradle.yml) ![Licence](https://img.shields.io/github/license/driessamyn/kafkasnoop?style=plastic)
 
 # kafkasnoop
 
