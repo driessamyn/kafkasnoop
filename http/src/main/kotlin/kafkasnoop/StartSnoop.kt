@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.associate
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.int
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.slf4j.LoggerFactory
@@ -13,6 +14,8 @@ class StartSnoop : CliktCommand() {
         private val logger = LoggerFactory.getLogger(StartSnoop::class.java)
     }
 
+    private val port: Int by option("-p", "--port", help = "Port to expose KafkaSnoop on").int()
+        .default(8080)
     private val brokerAddress: String by option("-b", "--broker", help = "Kafka broker address")
         .default("localhost:9092")
     private val kafkaCliOptions: Map<String, String> by
@@ -36,7 +39,8 @@ class StartSnoop : CliktCommand() {
 
         logger.info("Starting with $kafkaClientOptions")
 
-        val kc = KafkaClientFactory(kafkaClientOptions)
-        Server(kc).start()
+        KafkaClientFactory(kafkaClientOptions).use {
+            Server(it).start(port)
+        }
     }
 }

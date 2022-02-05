@@ -22,6 +22,8 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.7.+")
 }
 
+version = "0.0.1"
+
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
