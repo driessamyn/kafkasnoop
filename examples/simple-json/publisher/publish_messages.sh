@@ -1,3 +1,8 @@
+echo 'Create topic'
+kafka-topics.sh --bootstrap-server kafka:9092 \
+  --delete --topic super-heros
+kafka-topics.sh --bootstrap-server kafka:9092 --partitions 4 --replication-factor 1 \
+  --create --topic super-heros
 echo 'Create Kafka Messages'
 counter=0
 while true

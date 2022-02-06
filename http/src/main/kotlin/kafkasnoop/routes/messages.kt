@@ -37,7 +37,7 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
 
             kafkaClientFactory.createConsumer().use { consumer ->
                 val msgs = MessageProcessor(consumer, topicName, offset)
-                    .startProcess(maxMsg).toList()
+                    .startProcess(maxMsg).toList().sortedBy { it.offset }
                 respond(msgs)
             }
         }
