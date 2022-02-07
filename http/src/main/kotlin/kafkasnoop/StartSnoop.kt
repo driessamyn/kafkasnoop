@@ -31,7 +31,6 @@ class StartSnoop : CliktCommand() {
                 ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java.name,
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ByteArrayDeserializer::class.java.name,
                 ConsumerConfig.MAX_POLL_RECORDS_CONFIG to "100",
-                ConsumerConfig.CLIENT_ID_CONFIG to "kafkasnoop-consumer",
                 ConsumerConfig.ISOLATION_LEVEL_CONFIG to "read_committed"
             ) + kafkaCliOptions
             ).toProperties()

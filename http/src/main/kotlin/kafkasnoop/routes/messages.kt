@@ -18,7 +18,9 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
 
             kafkaClientFactory.createConsumer().use { consumer ->
                 MessageProcessor(consumer, topicName, offset)
-                    .startProcess().forEach {
+                    .startProcess()
+                    .forEach {
+                        logger.debug("Sending $it")
                         send(
                             Frame.Text(it.toString())
                         )

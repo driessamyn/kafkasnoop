@@ -54,7 +54,7 @@ class MessageProcessor(
             while (msgCount < maxMsgCount) {
                 val msgs = partitions.map { partition ->
                     kafkaConsumer
-                        .poll(Duration.ofMillis(100)).records(partition)
+                        .poll(Duration.ofMillis(0)).records(partition)
                         .map { record ->
                             val key = String(record.key(), Charsets.UTF_8)
                             val value = String(record.value(), Charsets.UTF_8)
@@ -63,9 +63,11 @@ class MessageProcessor(
                 }.flatten()
 
                 if (msgs.isEmpty())
-                    Thread.sleep(300)
-                else
+                    Thread.sleep(1000)
+                else {
+                    logger.debug("Found ${msgs.count()} on $topicName: ${msgs.groupBy { it.partition }.map { it.key to it.value.maxOf { it.offset } }.toMap()}")
                     yieldAll(msgs.sortedBy { it.offset })
+                }
 
                 msgCount += msgs.count()
             }
