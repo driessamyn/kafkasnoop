@@ -34,7 +34,7 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
             val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
 
             // todo: take partition, limit and offset from query string
-            val maxMsg = 100
+            val maxMsg = 10
             val offset = 0L
 
             kafkaClientFactory.createConsumer().use { consumer ->

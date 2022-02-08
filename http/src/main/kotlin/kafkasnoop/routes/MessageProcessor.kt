@@ -36,40 +36,49 @@ class MessageProcessor(
                 }
             }
 
-            // default to rewinding to 100 or max msg count
-            val offsetDiff = if (maxMsgCount == Int.MAX_VALUE) 100 else maxMsgCount
-            val startOffset = max(endOffsets.maxOf { it.value }.minus(offsetDiff), 0)
-
+            // default to rewinding to 5 or max msg count
+            val offsetDiff = if (maxMsgCount == Int.MAX_VALUE) 5 else maxMsgCount
             logger.info("Return messasges from offset $startOffset")
 
-            partitions.forEach { p ->
+            val messageCounts = partitions.map { p ->
                 logger.debug("Min offset for partition $p is ${beggingOffsets[p]}")
                 logger.debug("Max offset for partition $p is ${endOffsets[p]}")
+                val startOffset = max(endOffsets[p]?.minus(offsetDiff) ?: 0L, 0L)
                 val offset = max(startOffset, beggingOffsets[p] ?: 0)
-                logger.info("Start at offset for partition $p is $offset")
+                val numberOfMessages = endOffsets.getOrDefault(p, 0) - offset + 1
+                logger.info("Loading $numberOfMessages from $p starting at $offset")
                 kafkaConsumer.seek(p, offset)
-            }
+                p to numberOfMessages
+            }.toMap()
 
-            var msgCount = 0
-            while (msgCount < maxMsgCount) {
+            val messagesToLoad = max(maxMsgCount, messageCounts.map { it.value.toInt() }.sum())
+            var messagesLoaded = 0
+            var emptyPolls = 0
+            // TODO: work out why we sometimes never get all the messages.
+            while ((maxMsgCount == Int.MAX_VALUE || emptyPolls <= 5) && messagesLoaded < messagesToLoad) {
                 val msgs = partitions.map { partition ->
+                    logger.debug("Polling $partition from ${kafkaConsumer.position(partition)}")
                     kafkaConsumer
-                        .poll(Duration.ofMillis(0)).records(partition)
+                        .poll(Duration.ofMillis(200)).records(partition)
                         .map { record ->
+                            logger.debug("Found message $partition: ${record.offset()}")
                             val key = String(record.key(), Charsets.UTF_8)
                             val value = String(record.value(), Charsets.UTF_8)
-                            Message(record.offset(), partition.toString(), key, value)
+                            Message(record.offset(), partition.toString(), key, value, record.timestamp())
                         }
                 }.flatten()
 
-                if (msgs.isEmpty())
-                    Thread.sleep(1000)
-                else {
+                if (msgs.isEmpty()) {
+                    emptyPolls += 1
+                    logger.debug("Empty polls: $emptyPolls")
+                    Thread.sleep(200)
+                } else {
                     logger.debug("Found ${msgs.count()} on $topicName: ${msgs.groupBy { it.partition }.map { it.key to it.value.maxOf { it.offset } }.toMap()}")
                     yieldAll(msgs.sortedBy { it.offset })
+                    emptyPolls = 0
                 }
-
-                msgCount += msgs.count()
+                messagesLoaded += msgs.count()
+                logger.debug("Loaded $messagesLoaded out of $messagesToLoad")
             }
             logger.debug("stopping to process")
         }
