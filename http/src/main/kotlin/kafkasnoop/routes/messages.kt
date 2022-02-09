@@ -16,16 +16,18 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
             // todo: take partition, limit and offset from query string
             val offset = 0L
 
-            kafkaClientFactory.createConsumer().use { consumer ->
-                MessageProcessor(consumer, topicName, offset)
-                    .startProcess()
-                    .forEach {
-                        logger.debug("Sending $it")
-                        send(
-                            Frame.Text(it.toString())
-                        )
-                    }
-            }
+            val processor = MessageProcessor(kafkaClientFactory, topicName, offset)
+            val partitions = processor.partitions
+
+            // TODO: fix this up so that it streams from multiple partitions in parallel.
+            processor
+                .startProcess(partitions.first())
+                .forEach {
+                    logger.debug("Sending $it")
+                    send(
+                        Frame.Text(it.toString())
+                    )
+                }
         }
     }
 
@@ -37,11 +39,11 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
             val maxMsg = 10
             val offset = 0L
 
-            kafkaClientFactory.createConsumer().use { consumer ->
-                val msgs = MessageProcessor(consumer, topicName, offset)
-                    .startProcess(maxMsg).toList().sortedBy { it.offset }
-                respond(msgs)
-            }
+            val processor = MessageProcessor(kafkaClientFactory, topicName, offset)
+            val msgs = processor.partitions.map { p ->
+                processor.startProcess(p, maxMsg).toList().sortedBy { it.offset }
+            }.flatten().sortedByDescending { it.timestamp }
+            respond(msgs)
         }
     }
 }
