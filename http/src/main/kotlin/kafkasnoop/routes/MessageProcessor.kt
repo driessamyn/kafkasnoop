@@ -18,8 +18,10 @@ class MessageProcessor(
     private val topicName: String,
     // todo: take offset from query string & filter partitions
     private val startOffset: Long? = null,
-) {
+) : AutoCloseable {
     val partitions: List<TopicPartition>
+    @Volatile
+    private var isClosed = false
     init {
         logger.debug("Getting messages for $topicName")
         kafkaClientFactory.createConsumer().use {
@@ -43,14 +45,14 @@ class MessageProcessor(
                 logger.debug("Max offset for partition $partition is ${endOffsets[partition]}")
                 val startOffset = max(endOffsets[partition]?.minus(offsetDiff) ?: 0L, 0L)
                 val offset = max(startOffset, beggingOffsets[partition] ?: 0)
-                val messageCount = endOffsets.getOrDefault(partition, 0) - offset
+                val messageCount = max(endOffsets.getOrDefault(partition, 0) - offset, maxMsgCount.toLong())
                 logger.info("Loading $messageCount from $partition starting at $offset")
                 kafkaConsumer.seek(partition, offset)
 
                 var messagesLoaded = 0
                 var emptyPolls = 0
                 // TODO: work out why we sometimes never get all the messages.
-                while ((maxMsgCount == Int.MAX_VALUE || emptyPolls <= 5) && messagesLoaded < messageCount) {
+                while (!isClosed && (maxMsgCount == Int.MAX_VALUE || emptyPolls <= 5) && messagesLoaded < messageCount) {
                     logger.debug("Polling $partition from ${kafkaConsumer.position(partition)}")
                     val msgs = kafkaConsumer
                         .poll(Duration.ofMillis(200)).records(partition)
@@ -67,7 +69,9 @@ class MessageProcessor(
                         Thread.sleep(200)
                     } else {
                         logger.debug("Found ${msgs.count()} on $topicName: ${msgs.groupBy { it.partition }.map { it.key to it.value.maxOf { it.offset } }.toMap()}")
-                        yieldAll(msgs.sortedBy { it.offset })
+                        val msgs = msgs.sortedBy { it.offset }
+                        logger.debug("Found $msgs on $partition")
+                        yieldAll(msgs)
                         emptyPolls = 0
                     }
                     messagesLoaded += msgs.count()
@@ -76,4 +80,8 @@ class MessageProcessor(
                 logger.debug("stopping to process")
             }
         }
+
+    override fun close() {
+        isClosed = true
+    }
 }
