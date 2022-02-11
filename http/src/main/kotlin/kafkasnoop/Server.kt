@@ -3,6 +3,7 @@ package kafkasnoop
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.gson.*
+import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
@@ -10,6 +11,7 @@ import io.ktor.websocket.*
 import kafkasnoop.routes.messages
 import kafkasnoop.routes.topics
 import org.slf4j.LoggerFactory
+import java.time.Duration
 
 class Server(private val kafkaClientFactory: KafkaClientFactory) {
     companion object {

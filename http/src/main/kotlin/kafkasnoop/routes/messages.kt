@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
@@ -18,40 +19,45 @@ import kotlinx.coroutines.launch
 fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
 
     webSocket("/ws/{topic}") {
-        call.run {
+        val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
+        // todo: take partition, limit and offset from query string
+        val offset = 0L
 
-            val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
-            // todo: take partition, limit and offset from query string
-            val offset = 0L
+        MessageProcessor(kafkaClientFactory, topicName, offset).use { processor ->
+            val partitions = processor.partitions
 
-            MessageProcessor(kafkaClientFactory, topicName, offset).use { processor ->
-                val partitions = processor.partitions
-
-                // TODO: fix this up so that it exists properly when the WS disconnects.
-                val job = CoroutineScope(Dispatchers.Default).launch {
-                    partitions.map { p ->
-                        logger.info("Start processing from $p")
-                        processor.startProcess(p).asFlow()
-                    }.merge().cancellable().collect {
-                        logger.debug("Sending $it")
-                        send(
-                            Frame.Text(it.toString())
-                        )
+            val job = CoroutineScope(Dispatchers.Default).launch {
+                partitions.map { p ->
+                    logger.info("Start processing from $p")
+                    processor.startProcess(p).asFlow().cancellable().catch {
+                        logger.error(it.message)
                     }
-                }
-                try {
-                    job.join()
-                } catch (e: ClosedReceiveChannelException) {
-                    logger.info("Websocket connecton closed")
-                    job.cancel()
-                } catch (e: Throwable) {
-                    logger.error(e.message)
-                    e.printStackTrace()
-                    job.cancel()
+                }.merge().collect {
+                    logger.debug("Sending $it")
+                    send(
+                        Frame.Text(it.toString())
+                    )
                 }
             }
+            try {
+                for (frame in incoming) {
+                    when (frame) {
+                        is Frame.Close -> {
+                            job.cancel()
+                        }
+                        else -> logger.warn("Incoming Frame type of ${frame.frameType} not supported.")
+                    }
+                }
+            } catch (e: ClosedReceiveChannelException) {
+                logger.info("WebSocket connection unexpectedly closed")
+            } catch (e: Throwable) {
+                logger.error(e.message)
+                e.printStackTrace()
+            } finally {
+                job.cancel()
+                logger.debug("WebSocket terminated")
+            }
         }
-        logger.debug("Exit web socket")
     }
 
     get("/api/{topic}") {
