@@ -16,8 +16,6 @@ import kotlin.math.max
 class MessageProcessor(
     private val kafkaClientFactory: KafkaClientFactory,
     private val topicName: String,
-    // todo: take offset from query string & filter partitions
-    private val startOffset: Long? = null,
 ) : AutoCloseable {
     val partitions: List<TopicPartition>
     @Volatile
@@ -31,7 +29,7 @@ class MessageProcessor(
         }
     }
 
-    fun startProcess(partition: TopicPartition, maxMsgCount: Int = Int.MAX_VALUE) =
+    fun startProcess(partition: TopicPartition, maxMsgCount: Int = Int.MAX_VALUE, minOffset: Long = 0L) =
         sequence {
             kafkaClientFactory.createConsumer().use { kafkaConsumer ->
                 kafkaConsumer.assign(listOf(partition))
@@ -40,18 +38,17 @@ class MessageProcessor(
 
                 // default to rewinding to 5 or max msg count
                 val offsetDiff = if (maxMsgCount == Int.MAX_VALUE) 5 else maxMsgCount
-                logger.info("Return messages from offset $startOffset")
                 logger.debug("Min offset for partition $partition is ${beggingOffsets[partition]}")
                 logger.debug("Max offset for partition $partition is ${endOffsets[partition]}")
                 val startOffset = max(endOffsets[partition]?.minus(offsetDiff) ?: 0L, 0L)
-                val offset = max(startOffset, beggingOffsets[partition] ?: 0)
+                val offset = max(startOffset, minOffset)
                 val messageCount = max(endOffsets.getOrDefault(partition, 0) - offset, maxMsgCount.toLong())
                 logger.info("Loading $messageCount from $partition starting at $offset")
                 kafkaConsumer.seek(partition, offset)
 
                 var messagesLoaded = 0
                 var emptyPolls = 0
-                // TODO: work out why we sometimes never get all the messages.
+                // TODO: tidy-up this logic.
                 while (!isClosed && (maxMsgCount == Int.MAX_VALUE || emptyPolls <= 5) && messagesLoaded < messageCount) {
                     logger.debug("Polling $partition from ${kafkaConsumer.position(partition)}")
                     val msgs = kafkaConsumer

@@ -20,17 +20,19 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
 
     webSocket("/ws/{topic}") {
         val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
-        // todo: take partition, limit and offset from query string
-        val offset = 0L
+        val partitionFilter = call.parameters["partition"]?.toInt()
+        val minOffset = call.parameters["minOffset"]?.toLong() ?: 0L
 
-        MessageProcessor(kafkaClientFactory, topicName, offset).use { processor ->
+        MessageProcessor(kafkaClientFactory, topicName).use { processor ->
             val partitions = processor.partitions
 
             val job = CoroutineScope(Dispatchers.Default).launch {
-                partitions.map { p ->
-                    logger.info("Start processing from $p")
-                    processor.startProcess(p).asFlow().cancellable().catch {
-                        logger.error(it.message)
+                partitions
+                    .filter { null == partitionFilter || it.partition() == partitionFilter }
+                    .map { p ->
+                        logger.info("Start processing from $p")
+                        processor.startProcess(p, minOffset = minOffset).asFlow().cancellable().catch {
+                            logger.error(it.message)
                     }
                 }.merge().collect {
                     logger.debug("Sending $it")
@@ -63,16 +65,18 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
     get("/api/{topic}") {
         call.run {
             val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
+            val partitionFilter = call.parameters["partition"]?.toInt()
+            val maxMsg = call.parameters["max"]?.toInt() ?: 10
+            val minOffset = call.parameters["minOffset"]?.toLong() ?: 0L
 
-            // todo: take partition, limit and offset from query string
-            val maxMsg = 10
-            val offset = 0L
-
-            val processor = MessageProcessor(kafkaClientFactory, topicName, offset)
-            val msgs = processor.partitions.map { p ->
-                processor.startProcess(p, maxMsg).toList().sortedBy { it.offset }
-            }.flatten().sortedByDescending { it.timestamp }
-            respond(msgs)
+            MessageProcessor(kafkaClientFactory, topicName).use { processor ->
+                val msgs = processor.partitions
+                    .filter { null == partitionFilter || it.partition() == partitionFilter }
+                    .map { p ->
+                        processor.startProcess(p, maxMsg, minOffset).toList().sortedBy { it.offset }
+                    }.flatten().sortedByDescending { it.timestamp }
+                respond(msgs)
+            }
         }
     }
 }
