@@ -1,17 +1,20 @@
 package kafkasnoop
 
+import com.papsign.ktor.openapigen.OpenAPIGen
+import com.papsign.ktor.openapigen.route.apiRouting
+import com.papsign.ktor.openapigen.route.route
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.gson.*
-import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
-import kafkasnoop.routes.messages
+import kafkasnoop.routes.messageOpenApi
+import kafkasnoop.routes.messagesWs
+import kafkasnoop.routes.openApi
 import kafkasnoop.routes.topics
 import org.slf4j.LoggerFactory
-import java.time.Duration
 
 class Server(private val kafkaClientFactory: KafkaClientFactory) {
     companion object {
@@ -28,13 +31,27 @@ class Server(private val kafkaClientFactory: KafkaClientFactory) {
                 }
             }
             install(WebSockets)
+            install(OpenAPIGen) {
+                // basic info
+                info {
+                    version = "0.0.1"
+                    title = "KafkaSnoop API"
+                    description = "HTTP API for Snooping on Kafka messages"
+                }
+            }
 
             routing {
+                openApi()
+
                 topics(kafkaClientFactory)
-                messages(kafkaClientFactory)
-                webSocket {
-                }
+                messagesWs(kafkaClientFactory)
+            }
+            apiRouting {
+                route("/api/{topic}").messageOpenApi(kafkaClientFactory)
             }
         }.start(wait = true)
     }
+
+
 }
+

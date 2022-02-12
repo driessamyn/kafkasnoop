@@ -1,11 +1,16 @@
 package kafkasnoop.routes
 
-import io.ktor.application.*
+import com.papsign.ktor.openapigen.annotations.parameters.PathParam
+import com.papsign.ktor.openapigen.annotations.parameters.QueryParam
+import com.papsign.ktor.openapigen.route.info
+import com.papsign.ktor.openapigen.route.path.normal.NormalOpenAPIRoute
+import com.papsign.ktor.openapigen.route.path.normal.get
+import com.papsign.ktor.openapigen.route.response.respond
 import io.ktor.http.cio.websocket.*
-import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import kafkasnoop.KafkaClientFactory
+import kafkasnoop.dto.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
@@ -15,8 +20,9 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
+import java.time.Instant
 
-fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
+fun Route.messagesWs(kafkaClientFactory: KafkaClientFactory) {
 
     webSocket("/ws/{topic}") {
         val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
@@ -33,13 +39,13 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
                         logger.info("Start processing from $p")
                         processor.startProcess(p, minOffset = minOffset).asFlow().cancellable().catch {
                             logger.error(it.message)
+                        }
+                    }.merge().collect {
+                        logger.debug("Sending $it")
+                        send(
+                            Frame.Text(it.toString())
+                        )
                     }
-                }.merge().collect {
-                    logger.debug("Sending $it")
-                    send(
-                        Frame.Text(it.toString())
-                    )
-                }
             }
             try {
                 for (frame in incoming) {
@@ -61,22 +67,44 @@ fun Route.messages(kafkaClientFactory: KafkaClientFactory) {
             }
         }
     }
+}
 
-    get("/api/{topic}") {
-        call.run {
-            val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
-            val partitionFilter = call.parameters["partition"]?.toInt()
-            val maxMsg = call.parameters["max"]?.toInt() ?: 10
-            val minOffset = call.parameters["minOffset"]?.toLong() ?: 0L
+private const val MAX_MESSAGES_DEFAULT = 10
+private const val MIN_OFFSET_DEFAULT = 0L
+data class GetTopicMessagesParams(
+    @PathParam("Name of the topic")
+    val topic: String,
+    @QueryParam("Partition filter (Optional)")
+    val partition: Int?,
+    @QueryParam("Maximum number of messages to return per partition - Optional, default: $MAX_MESSAGES_DEFAULT")
+    val max: Int?,
+    @QueryParam("Minimum offset to start returning messages from - Optional, default: $MIN_OFFSET_DEFAULT")
+    val minOffset: Long?
+)
+fun NormalOpenAPIRoute.messageOpenApi(kafkaClientFactory: KafkaClientFactory) {
+    get<GetTopicMessagesParams, List<Message>>(
+        info("Messages", "Get Messages from given topoc"),
+        example = listOf(
+            Message(
+                0,
+                "topic-parition",
+                "message-key",
+                "message-value", Instant.now().toEpochMilli()
+            )
+        )
+    ) { params ->
 
-            MessageProcessor(kafkaClientFactory, topicName).use { processor ->
-                val msgs = processor.partitions
-                    .filter { null == partitionFilter || it.partition() == partitionFilter }
-                    .map { p ->
-                        processor.startProcess(p, maxMsg, minOffset).toList().sortedBy { it.offset }
-                    }.flatten().sortedByDescending { it.timestamp }
-                respond(msgs)
-            }
+        MessageProcessor(kafkaClientFactory, params.topic).use { processor ->
+            val msgs = processor.partitions
+                .filter { null == params.partition || it.partition() == params.partition }
+                .map { p ->
+                    processor.startProcess(
+                        p,
+                        params.max ?: MAX_MESSAGES_DEFAULT,
+                        params.minOffset ?: MIN_OFFSET_DEFAULT
+                    ).toList().sortedBy { it.offset }
+                }.flatten().sortedByDescending { it.timestamp }
+            respond(msgs)
         }
     }
 }
