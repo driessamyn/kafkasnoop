@@ -4,6 +4,7 @@ import kafkasnoop.KafkaClientFactory
 import kafkasnoop.dto.Message
 import org.apache.kafka.common.TopicPartition
 import java.time.Duration
+import java.time.Instant
 import kotlin.math.max
 
 /**
@@ -57,7 +58,7 @@ class MessageProcessor(
                             logger.debug("Found message $partition: ${record.offset()}")
                             val key = String(record.key(), Charsets.UTF_8)
                             val value = String(record.value(), Charsets.UTF_8)
-                            Message(record.offset(), partition.toString(), key, value, record.timestamp())
+                            Message(record.offset(), partition.toString(), key, value, Instant.ofEpochMilli(record.timestamp()))
                         }
 
                     if (msgs.isEmpty()) {
@@ -66,9 +67,9 @@ class MessageProcessor(
                         Thread.sleep(200)
                     } else {
                         logger.debug("Found ${msgs.count()} on $topicName: ${msgs.groupBy { it.partition }.map { it.key to it.value.maxOf { it.offset } }.toMap()}")
-                        val msgs = msgs.sortedBy { it.offset }
-                        logger.debug("Found $msgs on $partition")
-                        yieldAll(msgs)
+                        val sortedMsgs = msgs.sortedBy { it.offset }
+                        logger.debug("Found $sortedMsgs on $partition")
+                        yieldAll(sortedMsgs)
                         emptyPolls = 0
                     }
                     messagesLoaded += msgs.count()
