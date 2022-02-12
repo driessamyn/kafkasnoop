@@ -11,6 +11,6 @@ pluginManagement {
 
 include(
     "avro",
-    "http:avro",
+    "http:serialisation:avro",
     "http:snoop",
 )
