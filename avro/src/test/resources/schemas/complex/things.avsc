@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "Things",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "car",
+    "type" : "kafkasnoop.avro.Car"
+  }, {
+    "name" : "engine",
+    "type" : "kafkasnoop.avro.Engine"
+  } ]
+}

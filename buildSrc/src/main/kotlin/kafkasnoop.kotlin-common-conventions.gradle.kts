@@ -20,6 +20,8 @@ dependencies {
     implementation("org.slf4j:slf4j-api:1.7.+")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.7.+")
+    testImplementation("org.assertj:assertj-core:3.22.+")
+    testImplementation("io.mockk:mockk:1.12.+")
 }
 
 version = "0.0.3"

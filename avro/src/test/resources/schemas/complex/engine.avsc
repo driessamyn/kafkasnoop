@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "Engine",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "size",
+    "type" : "int"
+  }, {
+    "name" : "fuelType",
+    "type" : "string"
+  } ]
+}
