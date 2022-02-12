@@ -3,8 +3,12 @@ plugins {
     id("com.google.cloud.tools.jib")
 }
 
+repositories {
+    maven { setUrl("https://jitpack.io") }
+}
+
 dependencies {
-    implementation(project(":avro"))
+    implementation("com.github.papsign:Ktor-OpenAPI-Generator:0.3-beta.2")
 }
 
 jib.to.image = "driessamyn/kafkasnoop"

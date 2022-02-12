@@ -24,6 +24,7 @@ services:
       - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:19092
       - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:19092
       - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=false
     depends_on:
       - zookeeper
     healthcheck:
