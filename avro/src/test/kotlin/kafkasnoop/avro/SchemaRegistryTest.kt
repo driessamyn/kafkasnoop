@@ -12,21 +12,26 @@ class SchemaRegistryTest {
     val simpleSchemaResources = listOf("schemas/simple/car.avsc", "schemas/simple/superhero.avsc")
     val parser = Schema.Parser()
     val schemas = simpleSchemaResources.map {
-        parser.parse(this::class.java.getResourceAsStream("/$it"))
+        this::class.java.getResourceAsStream("/$it").use { s -> parser.parse(s) }
     }
     val registry = SchemaRegistry(schemas)
     val carSchema = schemas.single { it.fullName == "kafkasnoop.avro.Car" }
     val carFingerPrint = SchemaNormalization.parsingFingerprint("SHA-256", carSchema)
 
     @Test
+    fun `when all return all`() {
+        assertThat(registry.all).containsAll(schemas)
+    }
+
+    @Test
     fun `when get and exist return`() {
-        assertThat(registry.get("kafkasnoop.avro.Car"))
+        assertThat(registry.getByName("kafkasnoop.avro.Car"))
             .isEqualTo(schemas.single { it.fullName == "kafkasnoop.avro.Car" })
     }
 
     @Test
     fun `when get and not exist return null`() {
-        assertThat(registry.get("kafkasnoop.avro.Foo"))
+        assertThat(registry.getByName("kafkasnoop.avro.Foo"))
             .isNull()
     }
 

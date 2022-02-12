@@ -7,15 +7,19 @@ import java.util.concurrent.ConcurrentHashMap
 
 class SchemaRegistry(schemas: List<Schema>) {
     companion object {
-        val encoder = Base64.getEncoder()
+        private val encoder: Base64.Encoder = Base64.getEncoder()
     }
+
     private val schemasMap: Map<String, Schema>
     private val fingerPrintsToSchema = ConcurrentHashMap<String, Map<String, String>>()
     init {
         schemasMap = schemas.associateBy { it.fullName }
     }
 
-    fun get(name: String): Schema? {
+    val all: Collection<Schema>
+        get() = schemasMap.values
+
+    fun getByName(name: String): Schema? {
         return schemasMap[name]
     }
 
