@@ -14,7 +14,7 @@ dependencies {
 jib.to.image = "driessamyn/kafkasnoop"
 
 tasks.jar {
-    this.archiveBaseName.set("kafkasnoop.http")
+    this.archiveBaseName.set("kafkasnoop")
 }
 
 application {

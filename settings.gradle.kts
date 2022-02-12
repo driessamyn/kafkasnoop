@@ -9,4 +9,8 @@ pluginManagement {
     }
 }
 
-include("http", "avro")
+include(
+    "avro",
+    "http:avro",
+    "http:snoop",
+)
