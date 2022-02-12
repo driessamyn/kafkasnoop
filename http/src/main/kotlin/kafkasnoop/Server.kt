@@ -56,7 +56,7 @@ class Server(private val kafkaClientFactory: KafkaClientFactory) {
             install(OpenAPIGen) {
                 // basic info
                 info {
-                    version = "0.0.2"
+                    version = "0.0.3"
                     title = "KafkaSnoop API"
                     description = "HTTP API for Snooping on Kafka messages"
                 }
