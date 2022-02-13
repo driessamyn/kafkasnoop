@@ -1,4 +1,4 @@
-package kafkasnoop.routes
+package kafkasnoop.serialisation.avro.routes
 
 import com.papsign.ktor.openapigen.openAPIGen
 import io.ktor.application.*

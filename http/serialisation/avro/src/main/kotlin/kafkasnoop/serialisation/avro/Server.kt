@@ -1,8 +1,7 @@
-package kafkasnoop
+package kafkasnoop.serialisation.avro
 
 import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.route.apiRouting
-import com.papsign.ktor.openapigen.route.route
 import io.ktor.application.*
 import io.ktor.features.*
 import io.ktor.gson.*
@@ -10,16 +9,14 @@ import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
+import kafkasnoop.avro.SchemaRegistry
 import kafkasnoop.http.InstantJsonSerialiser
-import kafkasnoop.routes.messages
-import kafkasnoop.routes.messagesWs
-import kafkasnoop.routes.openApi
-import kafkasnoop.routes.topics
+import kafkasnoop.serialisation.avro.routes.openApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
 import java.time.Instant
 
-class Server(private val kafkaClientFactory: KafkaClientFactory) {
+class Server(schemaRegistry: SchemaRegistry) {
     companion object {
         private val logger = LoggerFactory.getLogger(Server::class.java)
     }
@@ -43,18 +40,15 @@ class Server(private val kafkaClientFactory: KafkaClientFactory) {
                 // basic info
                 info {
                     version = "0.0.3"
-                    title = "KafkaSnoop API"
-                    description = "HTTP API for Snooping on Kafka messages"
+                    title = "KafkaSnoop AVRO Serialisation API"
+                    description = "HTTP API for AVRO Serialisation"
                 }
             }
 
             routing {
                 openApi()
-                messagesWs(kafkaClientFactory)
             }
             apiRouting {
-                route("/api").topics(kafkaClientFactory)
-                route("/api/{topic}").messages(kafkaClientFactory)
             }
         }.start(wait = true)
     }

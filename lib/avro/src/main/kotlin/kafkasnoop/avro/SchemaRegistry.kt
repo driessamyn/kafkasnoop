@@ -5,7 +5,7 @@ import org.apache.avro.SchemaNormalization
 import java.util.Base64
 import java.util.concurrent.ConcurrentHashMap
 
-class SchemaRegistry(schemas: List<Schema>) {
+class SchemaRegistry(schemas: Collection<Schema>) {
     companion object {
         private val encoder: Base64.Encoder = Base64.getEncoder()
     }
