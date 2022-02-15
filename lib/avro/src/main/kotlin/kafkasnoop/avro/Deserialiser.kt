@@ -23,10 +23,7 @@ class Deserialiser(
         schemaRegistry.all.forEach { schema ->
             try {
                 jsonArray.add(
-                    JsonObject().apply {
-                        addProperty("schema", schema.fullName)
-                        add("message", decode(msg, schema.fullName))
-                    }
+                    decode(msg, schema.fullName)
                 )
             } catch (e: Exception) {
                 logger.debug("Cannot convert msg with ${schema.fullName} - ${e.message}")
@@ -36,7 +33,10 @@ class Deserialiser(
     }
 
     fun decode(msg: ByteArray, schemaName: String): JsonObject {
-        return decodeElement(msg, schemaName).asJsonObject
+        return JsonObject().apply {
+            addProperty("schema", schemaName)
+            add("message", decodeElement(msg, schemaName))
+        }
     }
 
     private fun decodeElement(msg: ByteArray, schemaName: String): JsonElement {

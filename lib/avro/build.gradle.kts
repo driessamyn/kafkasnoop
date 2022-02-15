@@ -3,8 +3,8 @@ plugins {
 }
 
 dependencies {
-    implementation("org.apache.avro:avro:1.11.+")
-    implementation("com.google.code.gson:gson:2.9.+")
+    api("org.apache.avro:avro:1.11.+")
+    api("com.google.code.gson:gson:2.9.+")
 
     testImplementation("com.google.jimfs:jimfs:1.+")
 }

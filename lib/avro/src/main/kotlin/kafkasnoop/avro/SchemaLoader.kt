@@ -4,6 +4,7 @@ import org.apache.avro.Schema
 import org.slf4j.LoggerFactory
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlin.io.path.name
 import kotlin.streams.toList
 
 class SchemaLoader(
@@ -20,8 +21,9 @@ class SchemaLoader(
      */
     fun createFromDir(path: Path): SchemaRegistry {
         val files = Files.walk(path)
-            .filter { it.endsWith("avsc") }
-        return createFromSchemaFiles(files.toList())
+            .filter { it.name.endsWith("avsc") }
+            .toList()
+        return createFromSchemaFiles(files)
     }
 
     /**

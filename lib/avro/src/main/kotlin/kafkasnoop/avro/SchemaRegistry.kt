@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 class SchemaRegistry(schemas: Collection<Schema>) {
     companion object {
+        const val DEFAULT_FINGERPRINT_ALGORITHM = "SHA-256"
         private val encoder: Base64.Encoder = Base64.getEncoder()
     }
 
@@ -23,7 +24,7 @@ class SchemaRegistry(schemas: Collection<Schema>) {
         return schemasMap[name]
     }
 
-    fun getByFingerPrint(print: ByteArray, fingerPrintName: String = "SHA-256"): Schema? {
+    fun getByFingerPrint(print: ByteArray, fingerPrintName: String = DEFAULT_FINGERPRINT_ALGORITHM): Schema? {
         val name = fingerPrintsToSchema.computeIfAbsent(fingerPrintName) {
             schemasMap.values.map { schema ->
                 encoder.encodeToString(SchemaNormalization.parsingFingerprint(fingerPrintName, schema)) to schema.fullName
