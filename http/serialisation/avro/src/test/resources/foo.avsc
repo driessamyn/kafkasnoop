@@ -1,0 +1,44 @@
+{
+  "type" : "record",
+  "name" : "Foo",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [
+  {
+    "name" : "bar1",
+    "type" : "string"
+  },{
+    "name" : "bar2",
+    "type" : "string"
+  },{
+    "name" : "bar3",
+    "type" : "string"
+  },{
+    "name" : "bar4",
+    "type" : "string"
+  },{
+    "name" : "bar5",
+    "type" : "string"
+  },{
+    "name" : "bar6",
+    "type" : "string"
+  },{
+    "name" : "bar7",
+    "type" : "string"
+  },{
+    "name" : "bar8",
+    "type" : "string"
+  },{
+    "name" : "bar9",
+    "type" : "string"
+  },{
+    "name" : "bar10",
+    "type" : "string"
+  },{
+    "name" : "bar11",
+    "type" : "string"
+  },{
+    "name" : "bar12",
+    "type" : "string"
+  }
+  ]
+}

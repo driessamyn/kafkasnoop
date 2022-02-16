@@ -9,6 +9,7 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.ByteArrayDeserializer
 import org.slf4j.LoggerFactory
 
+@kotlinx.coroutines.ExperimentalCoroutinesApi
 class StartSnoop : CliktCommand() {
     companion object {
         private val logger = LoggerFactory.getLogger(StartSnoop::class.java)
