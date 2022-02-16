@@ -42,45 +42,41 @@ fun NormalOpenAPIRoute.deserialise(schemaRegistry: SchemaRegistry, deserialiser:
             val fingerprintAlgo = params.schemaFingerPrint ?: SchemaRegistry.DEFAULT_FINGERPRINT_ALGORITHM
             payload.stream.use {
                 respond(
-                    JsonObject().apply {
-                        add(
-                            "schemas",
-                            JsonArray().apply {
-                                deserialiser.decode(
-                                    it.readAllBytes(),
-                                    schemaRegistry.getByFingerPrint(fingerprintBin, fingerprintAlgo)?.fullName
-                                        ?: throw BadRequestException(
-                                            "Schema for fingerprint " +
-                                                    "[$fingerprintAlgo]${params.schemaFingerPrint} cannot be found."
-                                        )
+                    responsePayload(
+                        deserialiser.decode(
+                            it.readAllBytes(),
+                            schemaRegistry.getByFingerPrint(fingerprintBin, fingerprintAlgo)?.fullName
+                                ?: throw BadRequestException(
+                                    "Schema for fingerprint " +
+                                        "[$fingerprintAlgo]${params.schemaFingerPrint} cannot be found."
                                 )
-                            }
                         )
-                    }
+                    )
                 )
             }
         } else if (null != params.schema) {
             payload.stream.use {
                 respond(
-                    JsonObject().apply {
-                        add(
-                            "schemas",
-                            JsonArray().apply {
-                                deserialiser.decode(it.readAllBytes(), params.schema)
-                            }
-                        )
-                    }
+                    responsePayload(deserialiser.decode(it.readAllBytes(), params.schema))
                 )
             }
         } else {
             // fall back on trying all schemas
             payload.stream.use {
                 respond(
-                    JsonObject().apply {
-                        add("schemas", deserialiser.decode(it.readAllBytes()))
-                    }
+                    responsePayload(deserialiser.decode(it.readAllBytes()))
                 )
             }
         }
+    }
+}
+
+private fun responsePayload(decoded: JsonObject): JsonObject {
+    return responsePayload(JsonArray().apply { add(decoded) })
+}
+
+private fun responsePayload(decoded: JsonArray): JsonObject {
+    return JsonObject().apply {
+        add("schemas", decoded)
     }
 }
