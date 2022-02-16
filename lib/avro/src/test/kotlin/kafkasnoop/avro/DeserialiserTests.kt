@@ -22,12 +22,15 @@ class DeserialiserTests {
 
     val carJson = """
         {
-            "make":"Rover",
-            "model":"Mini",
-            "coolFactor":5,
-            "engine":{
-                "size":1300,
-                "fuelType":"petrol"
+            "schema":"kafkasnoop.avro.Car",
+            "message":{
+                "make":"Rover",
+                "model":"Mini",
+                "coolFactor":5,
+                "engine":{
+                    "size":1300,
+                    "fuelType":"petrol"
+                }
             }
         }
     """.trimIndent()
@@ -51,16 +54,9 @@ class DeserialiserTests {
     fun `when decode without schema try all`() {
         val decoded = deserialiser.decode(carMessage)
 
-        val json = """
-            {
-                "schema": "kafkasnoop.avro.Car",
-                "message": $carJson
-            }
-        """.trimIndent()
-
         // successfully deserialise to Car
         assertThat(decoded.map { it }).contains(
-            JsonParser.parseString(json).asJsonObject,
+            JsonParser.parseString(carJson).asJsonObject,
         )
 
         // can also serialise to Superhero
