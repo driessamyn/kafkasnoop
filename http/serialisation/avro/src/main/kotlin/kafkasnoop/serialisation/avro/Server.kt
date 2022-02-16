@@ -10,7 +10,6 @@ import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
-import kafkasnoop.avro.Deserialiser
 import kafkasnoop.avro.SchemaRegistry
 import kafkasnoop.http.InstantJsonSerialiser
 import kafkasnoop.serialisation.avro.routes.deserialise
@@ -20,7 +19,6 @@ import org.slf4j.LoggerFactory
 import java.time.Instant
 
 class Server(private val schemaRegistry: SchemaRegistry) {
-    private val deserialiser: Deserialiser = Deserialiser(schemaRegistry)
 
     companion object {
         private val logger = LoggerFactory.getLogger(Server::class.java)
@@ -30,12 +28,12 @@ class Server(private val schemaRegistry: SchemaRegistry) {
     fun start(port: Int) {
         logger.info("Starting HTTP server")
         embeddedServer(Netty, port = port) {
-            serialisationServer(schemaRegistry, deserialiser)
+            serialisationServer(schemaRegistry)
         }.start(wait = true)
     }
 }
 
-fun Application.serialisationServer(schemaRegistry: SchemaRegistry, deserialiser: Deserialiser) {
+fun Application.serialisationServer(schemaRegistry: SchemaRegistry) {
     install(ContentNegotiation) {
         gson {
             setPrettyPrinting()
@@ -60,6 +58,6 @@ fun Application.serialisationServer(schemaRegistry: SchemaRegistry, deserialiser
         openApi()
     }
     apiRouting {
-        route("/json").deserialise(schemaRegistry, deserialiser)
+        route("/json").deserialise(schemaRegistry)
     }
 }

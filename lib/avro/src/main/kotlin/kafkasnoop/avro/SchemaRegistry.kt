@@ -33,4 +33,8 @@ class SchemaRegistry(schemas: Collection<Schema>) {
 
         return schemasMap[name]
     }
+
+    fun getDeserialiser(): Deserialiser {
+        return Deserialiser(this)
+    }
 }

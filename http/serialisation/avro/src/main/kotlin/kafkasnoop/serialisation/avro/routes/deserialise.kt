@@ -8,7 +8,6 @@ import com.papsign.ktor.openapigen.route.path.normal.NormalOpenAPIRoute
 import com.papsign.ktor.openapigen.route.path.normal.post
 import com.papsign.ktor.openapigen.route.response.respond
 import io.ktor.features.*
-import kafkasnoop.avro.Deserialiser
 import kafkasnoop.avro.SchemaRegistry
 import kafkasnoop.serialisation.avro.dto.RawAvro
 import java.util.Base64
@@ -32,7 +31,8 @@ data class DeserialiseParams(
     val schemaFingerPrintAlgorithm: String?,
 )
 
-fun NormalOpenAPIRoute.deserialise(schemaRegistry: SchemaRegistry, deserialiser: Deserialiser) {
+fun NormalOpenAPIRoute.deserialise(schemaRegistry: SchemaRegistry) {
+    val deserialiser = schemaRegistry.getDeserialiser()
     post<DeserialiseParams, JsonObject, RawAvro>(
         info("Deserialise payload", "Turn binary AVRO payload into JSON"),
     ) { params, payload ->

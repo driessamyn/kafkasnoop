@@ -3,7 +3,6 @@ import com.google.gson.JsonParser
 import io.ktor.http.*
 import io.ktor.server.testing.*
 import kafkasnoop.avro.AvroSerialisationException
-import kafkasnoop.avro.Deserialiser
 import kafkasnoop.avro.SchemaLoader
 import kafkasnoop.serialisation.avro.dto.CONTENT_TYPE_AVRO
 import kafkasnoop.serialisation.avro.serialisationServer
@@ -19,7 +18,6 @@ class HttpPostE2ETest {
     }
 
     private val registry = SchemaLoader().createFromDir(schemaDir.toAbsolutePath())
-    private val deserialiser = Deserialiser(registry)
 
     private val expectedMultipleResponse = Gson().toJson(
         """
@@ -72,7 +70,7 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with all possible schemas`() {
         withTestApplication({
-            serialisationServer(registry, deserialiser)
+            serialisationServer(registry)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json") {
@@ -90,7 +88,7 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with given schema`() {
         withTestApplication({
-            serialisationServer(registry, deserialiser)
+            serialisationServer(registry)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json?schema=kafkasnoop.avro.Car") {
@@ -109,8 +107,7 @@ class HttpPostE2ETest {
     fun `when post avro deserialise with no matching schemas return empty`() {
         withTestApplication({
             val registry2 = SchemaLoader().createFromSchemaFiles(listOf(schemaDir.resolve("foo.avsc")))
-            val deserialiser2 = Deserialiser(registry2)
-            serialisationServer(registry2, deserialiser2)
+            serialisationServer(registry2)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json") {
@@ -128,7 +125,7 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with invalid schema throw`() {
         withTestApplication({
-            serialisationServer(registry, deserialiser)
+            serialisationServer(registry)
         }) {
             with(
                 assertThrows<AvroSerialisationException> {
@@ -146,7 +143,7 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with unknown schema throw`() {
         withTestApplication({
-            serialisationServer(registry, deserialiser)
+            serialisationServer(registry)
         }) {
             with(
                 assertThrows<AvroSerialisationException> {
@@ -165,7 +162,7 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with case insensitive match throw`() {
         withTestApplication({
-            serialisationServer(registry, deserialiser)
+            serialisationServer(registry)
         }) {
             with(
                 assertThrows<AvroSerialisationException> {
@@ -184,8 +181,7 @@ class HttpPostE2ETest {
     fun `when post avro deserialise with only possible schemas`() {
         withTestApplication({
             val registry2 = SchemaLoader().createFromSchemaFiles(listOf(schemaDir.resolve("car.avsc")))
-            val deserialiser2 = Deserialiser(registry2)
-            serialisationServer(registry2, deserialiser2)
+            serialisationServer(registry2)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json") {
