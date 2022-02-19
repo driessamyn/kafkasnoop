@@ -37,4 +37,8 @@ class SchemaRegistry(schemas: Collection<Schema>) {
     fun getDeserialiser(): Deserialiser {
         return Deserialiser(this)
     }
+
+    fun getEnvelopeDeserialser(): EnvelopeDeserialiser {
+        return EnvelopeDeserialiser(this)
+    }
 }

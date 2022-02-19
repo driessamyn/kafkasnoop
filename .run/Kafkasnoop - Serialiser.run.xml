@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Kafkasnoop - Serialiser" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="kafkasnoop.serialisation.avro.AppKt" />
+    <module name="kafkasnoop.http.serialisation.avro.main" />
+    <option name="PROGRAM_PARAMETERS" value="-s $PROJECT_DIR$/schemas -e kafkasnoop.test.EnvelopeWithFingerPrint --envelope-payload-field payload --envelope-schema-fingerprint-field schemaFingerprint" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

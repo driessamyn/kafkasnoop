@@ -8,6 +8,8 @@ import com.papsign.ktor.openapigen.route.path.normal.get
 import com.papsign.ktor.openapigen.route.response.respond
 import kafkasnoop.KafkaClientFactory
 import kafkasnoop.dto.Message
+import kafkasnoop.serialisation.MessageDeserialiser
+import kotlinx.coroutines.flow.toList
 import java.time.Instant
 
 private const val MAX_MESSAGES_DEFAULT = 10
@@ -22,7 +24,10 @@ data class GetTopicMessagesParams(
     @QueryParam("Minimum offset to start returning messages from - Optional, default: $MIN_OFFSET_DEFAULT")
     val minOffset: Long?
 )
-fun NormalOpenAPIRoute.messages(kafkaClientFactory: KafkaClientFactory) {
+fun NormalOpenAPIRoute.messages(
+    kafkaClientFactory: KafkaClientFactory,
+    messageDeserialiser: MessageDeserialiser
+) {
     get<GetTopicMessagesParams, List<Message>>(
         info("Messages", "Get Messages from given topic"),
         example = listOf(
@@ -30,12 +35,17 @@ fun NormalOpenAPIRoute.messages(kafkaClientFactory: KafkaClientFactory) {
                 0,
                 "topic-parition",
                 "message-key",
-                "message-value", Instant.now()
-            )
+                "message-value",
+                Instant.now(),
+            ),
         )
     ) { params ->
 
-        MessageProcessor(kafkaClientFactory, params.topic).use { processor ->
+        MessageProcessor(
+            kafkaClientFactory,
+            params.topic,
+            messageDeserialiser,
+        ).use { processor ->
             val msgs = processor.partitions
                 .filter { null == params.partition || it.partition() == params.partition }
                 .map { p ->

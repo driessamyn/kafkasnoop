@@ -2,22 +2,18 @@ package kafkasnoop
 
 import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.route.apiRouting
-import com.papsign.ktor.openapigen.route.route
 import io.ktor.application.*
-import io.ktor.features.*
-import io.ktor.gson.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
-import kafkasnoop.http.InstantJsonSerialiser
-import kafkasnoop.routes.messages
+import kafkasnoop.http.installContentNegotiation
+import kafkasnoop.http.openApi
+import kafkasnoop.serialisation.MessageDeserialiser
 import kafkasnoop.routes.messagesWs
-import kafkasnoop.routes.openApi
-import kafkasnoop.routes.topics
+import kafkasnoop.routes.snoopApiRoutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
 class Server(private val kafkaClientFactory: KafkaClientFactory) {
     companion object {
@@ -25,22 +21,12 @@ class Server(private val kafkaClientFactory: KafkaClientFactory) {
     }
 
     @ExperimentalCoroutinesApi
-    fun start(port: Int) {
+    fun start(port: Int, messageDeserialiser: MessageDeserialiser) {
         logger.info("Starting HTTP server")
         embeddedServer(Netty, port = port) {
-            install(ContentNegotiation) {
-                gson {
-                    setPrettyPrinting()
-                    disableHtmlEscaping()
-                    registerTypeAdapter(
-                        Instant::class.java,
-                        InstantJsonSerialiser()
-                    )
-                }
-            }
+            installContentNegotiation()
             install(WebSockets)
             install(OpenAPIGen) {
-                // basic info
                 info {
                     version = "0.0.3"
                     title = "KafkaSnoop API"
@@ -50,11 +36,10 @@ class Server(private val kafkaClientFactory: KafkaClientFactory) {
 
             routing {
                 openApi()
-                messagesWs(kafkaClientFactory)
+                messagesWs(kafkaClientFactory, messageDeserialiser)
             }
             apiRouting {
-                route("/api").topics(kafkaClientFactory)
-                route("/api/{topic}").messages(kafkaClientFactory)
+                snoopApiRoutes(kafkaClientFactory, messageDeserialiser)
             }
         }.start(wait = true)
     }

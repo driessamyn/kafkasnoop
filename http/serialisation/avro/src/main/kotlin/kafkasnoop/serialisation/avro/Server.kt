@@ -1,24 +1,26 @@
 package kafkasnoop.serialisation.avro
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.papsign.ktor.openapigen.OpenAPIGen
 import com.papsign.ktor.openapigen.route.apiRouting
-import com.papsign.ktor.openapigen.route.route
 import io.ktor.application.*
-import io.ktor.features.*
-import io.ktor.gson.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import kafkasnoop.avro.SchemaRegistry
-import kafkasnoop.http.InstantJsonSerialiser
-import kafkasnoop.serialisation.avro.routes.deserialise
-import kafkasnoop.serialisation.avro.routes.openApi
+import kafkasnoop.http.installContentNegotiation
+import kafkasnoop.http.openApi
+import kafkasnoop.serialisation.avro.routes.serialiserApiRoutes
+import kafkasnoop.serialisation.avro.routes.serialiserRoutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
-import java.time.Instant
 
-class Server(private val schemaRegistry: SchemaRegistry) {
+class Server(
+    private val schemaRegistry: SchemaRegistry,
+    private val messageEnvelopeOptions: MessageSchemaOptions
+) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(Server::class.java)
@@ -28,22 +30,16 @@ class Server(private val schemaRegistry: SchemaRegistry) {
     fun start(port: Int) {
         logger.info("Starting HTTP server")
         embeddedServer(Netty, port = port) {
-            serialisationServer(schemaRegistry)
+            serialisationServer(schemaRegistry, messageEnvelopeOptions)
         }.start(wait = true)
     }
 }
 
-fun Application.serialisationServer(schemaRegistry: SchemaRegistry) {
-    install(ContentNegotiation) {
-        gson {
-            setPrettyPrinting()
-            disableHtmlEscaping()
-            registerTypeAdapter(
-                Instant::class.java,
-                InstantJsonSerialiser()
-            )
-        }
-    }
+fun Application.serialisationServer(
+    schemaRegistry: SchemaRegistry,
+    messageEnvelopeOptions: MessageSchemaOptions
+) {
+    installContentNegotiation()
     install(WebSockets)
     install(OpenAPIGen) {
         // basic info
@@ -56,8 +52,19 @@ fun Application.serialisationServer(schemaRegistry: SchemaRegistry) {
 
     routing {
         openApi()
+        serialiserRoutes(schemaRegistry, messageEnvelopeOptions)
     }
     apiRouting {
-        route("/json").deserialise(schemaRegistry)
+        serialiserApiRoutes(schemaRegistry, messageEnvelopeOptions)
+    }
+}
+
+private fun responsePayload(decoded: JsonObject): JsonObject {
+    return responsePayload(JsonArray().apply { add(decoded) })
+}
+
+private fun responsePayload(decoded: JsonArray): JsonObject {
+    return JsonObject().apply {
+        add("schemas", decoded)
     }
 }

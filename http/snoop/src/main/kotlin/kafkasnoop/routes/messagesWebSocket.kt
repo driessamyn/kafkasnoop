@@ -4,11 +4,11 @@ import io.ktor.http.cio.websocket.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import kafkasnoop.KafkaClientFactory
+import kafkasnoop.serialisation.MessageDeserialiser
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
-import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
@@ -16,14 +16,21 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 @ExperimentalCoroutinesApi
-fun Route.messagesWs(kafkaClientFactory: KafkaClientFactory) {
+fun Route.messagesWs(
+    kafkaClientFactory: KafkaClientFactory,
+    messageDeserialiser: MessageDeserialiser
+) {
 
     webSocket("/ws/{topic}") {
         val topicName = call.parameters["topic"] ?: throw IllegalArgumentException("Topic must be provided")
         val partitionFilter = call.parameters["partition"]?.toInt()
         val minOffset = call.parameters["minOffset"]?.toLong() ?: 0L
 
-        MessageProcessor(kafkaClientFactory, topicName).use { processor ->
+        MessageProcessor(
+            kafkaClientFactory,
+            topicName,
+            messageDeserialiser,
+        ).use { processor ->
             val partitions = processor.partitions
 
             val job = CoroutineScope(Dispatchers.Default).launch {
@@ -31,7 +38,7 @@ fun Route.messagesWs(kafkaClientFactory: KafkaClientFactory) {
                     .filter { null == partitionFilter || it.partition() == partitionFilter }
                     .map { p ->
                         logger.info("Start processing from $p")
-                        processor.startProcess(p, minOffset = minOffset).asFlow().cancellable().catch {
+                        processor.startProcess(p, minOffset = minOffset).cancellable().catch {
                             logger.error(it.message)
                         }
                     }.merge().collect {
