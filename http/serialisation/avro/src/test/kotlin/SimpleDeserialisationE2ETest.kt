@@ -1,25 +1,30 @@
-import com.google.gson.Gson
 import com.google.gson.JsonParser
 import io.ktor.http.*
 import io.ktor.server.testing.*
+import io.mockk.every
+import io.mockk.mockk
 import kafkasnoop.avro.AvroSerialisationException
 import kafkasnoop.avro.SchemaLoader
-import kafkasnoop.serialisation.avro.dto.CONTENT_TYPE_AVRO
+import kafkasnoop.http.ContentType
+import kafkasnoop.serialisation.avro.MessageSchemaOptions
 import kafkasnoop.serialisation.avro.serialisationServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Paths
 
-class HttpPostE2ETest {
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class SimpleDeserialisationE2ETest {
     companion object {
-        val schemaDir = Paths.get("src", "test", "resources")
-        val avroMsg = schemaDir.resolve("rover-mini.avro")
+        val resourceDir = Paths.get("src", "test", "resources").toAbsolutePath()
+        val schemaDir = resourceDir.resolve("schema").resolve("simple")
+        val avroMsg = resourceDir.resolve("rover-mini.avro")
     }
 
-    private val registry = SchemaLoader().createFromDir(schemaDir.toAbsolutePath())
+    private val registry = SchemaLoader().createFromDir(schemaDir)
 
-    private val expectedMultipleResponse = Gson().toJson(
+    private val expectedMultipleResponse = JsonParser.parseString(
         """
         {
           "schemas": [
@@ -46,7 +51,7 @@ class HttpPostE2ETest {
         }
         """.trimIndent()
     )
-    private val expectedCarMessage = Gson().toJson(
+    private val expectedCarMessage = JsonParser.parseString(
         """
         {
           "schemas": [
@@ -67,20 +72,26 @@ class HttpPostE2ETest {
         """.trimIndent()
     )
 
+    val envelopeOptions = mockk<MessageSchemaOptions>(relaxed = true) {
+        every { envelopeSchemaName } returns null
+        every { schemaNameFieldInEnvelope } returns null
+        every { schemaFingerPrintFieldInEnvelope } returns null
+    }
+
     @Test
     fun `when post avro deserialise with all possible schemas`() {
         withTestApplication({
-            serialisationServer(registry)
+            serialisationServer(registry, envelopeOptions)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json") {
                     val fileBytes = avroMsg.toFile()
 
-                    addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                    addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                     setBody(fileBytes.readBytes())
                 }
             ) {
-                assertThat(expectedMultipleResponse).isEqualTo(Gson().toJson(response.content))
+                assertThat(expectedMultipleResponse).isEqualTo(JsonParser.parseString(response.content))
             }
         }
     }
@@ -88,17 +99,17 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with given schema`() {
         withTestApplication({
-            serialisationServer(registry)
+            serialisationServer(registry, envelopeOptions)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json?schema=kafkasnoop.avro.Car") {
                     val fileBytes = avroMsg.toFile()
 
-                    addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                    addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                     setBody(fileBytes.readBytes())
                 }
             ) {
-                assertThat(expectedCarMessage).isEqualTo(Gson().toJson(response.content))
+                assertThat(expectedCarMessage).isEqualTo(JsonParser.parseString(response.content))
             }
         }
     }
@@ -107,13 +118,13 @@ class HttpPostE2ETest {
     fun `when post avro deserialise with no matching schemas return empty`() {
         withTestApplication({
             val registry2 = SchemaLoader().createFromSchemaFiles(listOf(schemaDir.resolve("foo.avsc")))
-            serialisationServer(registry2)
+            serialisationServer(registry2, envelopeOptions)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json") {
                     val fileBytes = avroMsg.toFile()
 
-                    addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                    addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                     setBody(fileBytes.readBytes())
                 }
             ) {
@@ -125,14 +136,14 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with invalid schema throw`() {
         withTestApplication({
-            serialisationServer(registry)
+            serialisationServer(registry, envelopeOptions)
         }) {
             with(
                 assertThrows<AvroSerialisationException> {
                     handleRequest(HttpMethod.Post, "/json?schema=kafkasnoop.avro.Foo") {
                         val fileBytes = avroMsg.toFile()
 
-                        addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                        addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                         setBody(fileBytes.readBytes())
                     }
                 }
@@ -143,14 +154,14 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with unknown schema throw`() {
         withTestApplication({
-            serialisationServer(registry)
+            serialisationServer(registry, envelopeOptions)
         }) {
             with(
                 assertThrows<AvroSerialisationException> {
                     handleRequest(HttpMethod.Post, "/json?schema=kafkasnoop.avro.FooBar") {
                         val fileBytes = avroMsg.toFile()
 
-                        addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                        addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                         setBody(fileBytes.readBytes())
                     }
                 }
@@ -162,14 +173,14 @@ class HttpPostE2ETest {
     @Test
     fun `when post avro deserialise with case insensitive match throw`() {
         withTestApplication({
-            serialisationServer(registry)
+            serialisationServer(registry, envelopeOptions)
         }) {
             with(
                 assertThrows<AvroSerialisationException> {
                     handleRequest(HttpMethod.Post, "/json?schema=kafkasnoop.avro.car") {
                         val fileBytes = avroMsg.toFile()
 
-                        addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                        addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                         setBody(fileBytes.readBytes())
                     }
                 }
@@ -181,17 +192,17 @@ class HttpPostE2ETest {
     fun `when post avro deserialise with only possible schemas`() {
         withTestApplication({
             val registry2 = SchemaLoader().createFromSchemaFiles(listOf(schemaDir.resolve("car.avsc")))
-            serialisationServer(registry2)
+            serialisationServer(registry2, envelopeOptions)
         }) {
             with(
                 handleRequest(HttpMethod.Post, "/json") {
                     val fileBytes = avroMsg.toFile()
 
-                    addHeader(HttpHeaders.ContentType, CONTENT_TYPE_AVRO)
+                    addHeader(HttpHeaders.ContentType, ContentType.AVRO)
                     setBody(fileBytes.readBytes())
                 }
             ) {
-                assertThat(expectedCarMessage).isEqualTo(Gson().toJson(response.content))
+                assertThat(expectedCarMessage).isEqualTo(JsonParser.parseString(response.content))
             }
         }
     }

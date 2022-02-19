@@ -1,11 +1,10 @@
 version: '3'
 services:
-  kafkasnoop:
-    image: "driessamyn/kafkasnoop:latest"
-    command:
-      - -bkafka:9092
-    ports:
-      - "8080:8080"
+#  message-publisher:
+#    build: publisher
+#    depends_on:
+#      kafka:
+#        condition: service_healthy
   kafka:
     hostname: kafka
     image: "bitnami/kafka:latest"
@@ -20,7 +19,6 @@ services:
       - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:19092
       - KAFKA_INTER_BROKER_LISTENER_NAME=CLIENT
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=false
-      - delete.topic.enable=true
     depends_on:
       - zookeeper
     healthcheck:

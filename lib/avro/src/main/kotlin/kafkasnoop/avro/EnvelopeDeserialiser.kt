@@ -30,6 +30,10 @@ class EnvelopeDeserialiser(
         schemaNameField: String,
         messageField: String
     ): JsonObject {
+        check(envelopeSchemaName.isNotBlank()) { "envelopeSchemaName must not be blank" }
+        check(schemaNameField.isNotBlank()) { "schemaNameField must not be blank" }
+        check(messageField.isNotBlank()) { "messageField must not be blank" }
+
         val envelope = decodeEnvelope(msg, envelopeSchemaName)
         val schemaName = envelope.getString(schemaNameField)
         val bytes = envelope.getByteArray(messageField)
@@ -51,6 +55,9 @@ class EnvelopeDeserialiser(
         schemaFingerPrintAlgoritmField: String? = null,
         schemaFingerPrintAlgorithm: String = "SHA-256"
     ): JsonObject {
+        check(envelopeSchemaName.isNotBlank()) { "envelopeSchemaName must not be blank" }
+        check(schemaFingerPrintField.isNotBlank()) { "schemaFingerPrintField must not be blank" }
+        check(messageField.isNotBlank()) { "messageField must not be blank" }
         val envelope = decodeEnvelope(msg, envelopeSchemaName)
         val schemaFingerPrint = envelope.getByteArray(schemaFingerPrintField)
         val bytes = envelope.getByteArray(messageField)
@@ -89,5 +96,5 @@ private fun GenericData.Record.getByteArray(field: String): ByteArray {
         return record.bytes()
     else if (record is ByteBuffer)
         return record.array()
-    throw AvroSerialisationException("Cannot conver type $record")
+    throw AvroSerialisationException("Cannot convert type $record")
 }

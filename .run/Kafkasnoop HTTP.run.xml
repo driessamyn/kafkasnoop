@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Kafkasnoop HTTP" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="kafkasnoop.AppKt" />
+    <module name="kafkasnoop.http.snoop.main" />
+    <option name="PROGRAM_PARAMETERS" value="-p 8090 -b localhost:19092 -s http://localhost:9000/json" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

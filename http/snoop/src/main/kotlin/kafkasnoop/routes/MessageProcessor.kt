@@ -2,6 +2,9 @@ package kafkasnoop.routes
 
 import kafkasnoop.KafkaClientFactory
 import kafkasnoop.dto.Message
+import kafkasnoop.serialisation.MessageDeserialiser
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.apache.kafka.common.TopicPartition
 import java.time.Duration
 import java.time.Instant
@@ -17,6 +20,7 @@ import kotlin.math.max
 class MessageProcessor(
     private val kafkaClientFactory: KafkaClientFactory,
     private val topicName: String,
+    private val messageDeserialiser: MessageDeserialiser,
 ) : AutoCloseable {
     val partitions: List<TopicPartition>
     @Volatile
@@ -30,8 +34,8 @@ class MessageProcessor(
         }
     }
 
-    fun startProcess(partition: TopicPartition, maxMsgCount: Int = Int.MAX_VALUE, minOffset: Long = 0L) =
-        sequence {
+    fun startProcess(partition: TopicPartition, maxMsgCount: Int = Int.MAX_VALUE, minOffset: Long = 0L): Flow<Message> =
+        flow {
             kafkaClientFactory.createConsumer().use { kafkaConsumer ->
                 kafkaConsumer.assign(listOf(partition))
                 val beggingOffsets = kafkaConsumer.beginningOffsets(partitions)
@@ -56,8 +60,8 @@ class MessageProcessor(
                         .poll(Duration.ofMillis(200)).records(partition)
                         .map { record ->
                             logger.debug("Found message $partition: ${record.offset()}")
-                            val key = String(record.key(), Charsets.UTF_8)
-                            val value = String(record.value(), Charsets.UTF_8)
+                            val key = messageDeserialiser.deserialise(record.key() ?: ByteArray(0))
+                            val value = messageDeserialiser.deserialise(record.value() ?: ByteArray(0))
                             Message(record.offset(), partition.toString(), key, value, Instant.ofEpochMilli(record.timestamp()))
                         }
 
@@ -69,7 +73,7 @@ class MessageProcessor(
                         logger.debug("Found ${msgs.count()} on $topicName: ${msgs.groupBy { it.partition }.map { it.key to it.value.maxOf { it.offset } }.toMap()}")
                         val sortedMsgs = msgs.sortedBy { it.offset }
                         logger.debug("Found $sortedMsgs on $partition")
-                        yieldAll(sortedMsgs)
+                        sortedMsgs.forEach { emit(it) }
                         emptyPolls = 0
                     }
                     messagesLoaded += msgs.count()

@@ -1,0 +1,18 @@
+{
+  "type" : "record",
+  "name" : "Car",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "make",
+    "type" : "string"
+  }, {
+    "name" : "model",
+    "type" : "string"
+  }, {
+    "name" : "coolFactor",
+    "type" : "int"
+  }, {
+    "name" : "engine",
+    "type" : "kafkasnoop.avro.Engine"
+  } ]
+}

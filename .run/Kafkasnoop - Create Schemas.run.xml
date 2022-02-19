@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Kafkasnoop - Create Schemas" type="JetRunConfigurationType">
+    <option name="MAIN_CLASS_NAME" value="kafkasnoop.test.AppKt" />
+    <module name="kafkasnoop.test.publisher.main" />
+    <option name="PROGRAM_PARAMETERS" value="schema" />
+    <shortenClasspath name="NONE" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
