@@ -1,0 +1,16 @@
+{
+  "type" : "record",
+  "name" : "EnvelopeWithFingerPrint",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "schemaFingerprint",
+    "type" : {
+      "type" : "fixed",
+      "name" : "schemaFingerprint",
+      "size" : 32
+    }
+  }, {
+    "name" : "payload",
+    "type" : "bytes"
+  } ]
+}

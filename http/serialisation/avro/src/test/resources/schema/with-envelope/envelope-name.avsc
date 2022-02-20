@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "EnvelopeWithSchemaName",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "schemaName",
+    "type" : "string"
+  }, {
+    "name" : "payload",
+    "type" : "bytes"
+  } ]
+}

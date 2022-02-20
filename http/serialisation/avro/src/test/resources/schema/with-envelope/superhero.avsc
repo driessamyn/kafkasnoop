@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "Superhero",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "name",
+    "type" : "string"
+  }, {
+    "name" : "coolFactor",
+    "type" : "int"
+  } ]
+}
