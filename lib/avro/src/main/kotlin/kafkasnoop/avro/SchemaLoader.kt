@@ -42,9 +42,14 @@ class SchemaLoader(
      */
     fun createFromSchemaSources(schemas: List<String>): SchemaRegistry {
         val all = schemas.map {
-            val schema = AvroSchema.create(it)
-            schema.fullName to schema
-        }.toMap()
+            try {
+                val schema = AvroSchema.create(it)
+                schema.fullName to schema
+            } catch (e: Exception) {
+                logger.warn("Cannot parse JSON in schema $it")
+                null
+            }
+        }.filterNotNull().toMap()
 
         // NOTE: there's probably a much more efficient way of doing this.
         val ordered = mutableListOf<String>()
@@ -64,9 +69,12 @@ class SchemaLoader(
 
             if (remaining.size == newRemaining.size) {
                 logger.warn(
-                    "Cannot parse the following schemas due to missing dependencies:\n ${
-                    remaining.map { "$it: ${all[it]!!.needs}" }
-                    }"
+                    "Cannot parse the following schemas due to missing dependencies:\n " +
+                        "${remaining.map {
+                            "   $it: ${all[it]!!.needs}"
+                        }
+                        }\n" +
+                        "Has: $ordered"
                 )
                 break
             }
@@ -75,8 +83,13 @@ class SchemaLoader(
 
         val schemaParser = Schema.Parser()
         val avroSchemas = ordered.map {
-            schemaParser.parse(all[it]!!.schema)
-        }
+            try {
+                schemaParser.parse(all[it]!!.schema)
+            } catch (e: Exception) {
+                logger.warn("Could not parse schema $it: ${e.message}")
+                null
+            }
+        }.filterNotNull()
         return schemaRegistryFactory.create(avroSchemas)
     }
 }

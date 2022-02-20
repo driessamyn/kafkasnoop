@@ -9,12 +9,14 @@ import kafkasnoop.http.ContentType
 import kafkasnoop.serialisation.avro.MessageSchemaOptions
 import kafkasnoop.serialisation.avro.serialisationServer
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import java.nio.file.Paths
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Disabled
 class SimpleDeserialisationE2ETest {
     companion object {
         val resourceDir = Paths.get("src", "test", "resources").toAbsolutePath()

@@ -59,4 +59,22 @@ class AvroSchemaTests {
             )
         }.assertAll()
     }
+
+    @Test
+    fun `when fields missing needs nothing`() {
+        val schema = """
+                {
+                  "type": "enum",
+                  "name": "Foo",
+                  "namespace": "kafkasnoop.avro",
+                  "symbols": [ "BAR", "UNKNOWN" ]
+                }
+        """.trimIndent()
+
+        val schemaObj = AvroSchema.create(schema)
+
+        SoftAssertions().apply {
+            assertThat(schemaObj.needs).isEmpty()
+        }.assertAll()
+    }
 }

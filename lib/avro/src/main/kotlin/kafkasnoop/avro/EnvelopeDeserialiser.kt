@@ -77,7 +77,8 @@ class EnvelopeDeserialiser(
         val datumReader: DatumReader<Any> = GenericDatumReader(schema)
         try {
             val decoder = decoderFactory.binaryDecoder(msg, null)
-            return datumReader.read(null, decoder) as GenericData.Record
+            val record = datumReader.read(null, decoder) as GenericData.Record
+            return record
         } catch (e: Exception) {
             val eMsg = "Cannot convert msg envelope with ${schema.fullName}"
             logger.warn("$eMsg - ${e.message}")
