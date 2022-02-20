@@ -29,22 +29,23 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Extract metadata (tags, labels) for Docker - kafkasnoop
-        id: meta
+        id: meta-kafksnoop
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
           images: driessamyn/kafkasnoop
-
+          
       - name: Push Docker image - kafkasnoop
         uses: akhilerm/tag-push-action@v2.0.0
         with:
           src: driessamyn/kafkasnoop
           dst: |
             ${{ steps.meta.outputs.tags }}
+            
       - name: Extract metadata (tags, labels) for Docker - kafkasnoop-avro
-          id: meta
-          uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-          with:
-            images: driessamyn/kafkasnoop-avro
+        id: meta-kafkasnoop-avro
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: driessamyn/kafkasnoop-avro
 
       - name: Push Docker image - kafkasnoop-avro
         uses: akhilerm/tag-push-action@v2.0.0
@@ -52,11 +53,12 @@ jobs:
           src: driessamyn/kafkasnoop-avro
           dst: |
             ${{ steps.meta.outputs.tags }}
+            
       - name: Extract metadata (tags, labels) for Docker - kafkasnoop-wrap
-          id: meta
-          uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
-          with:
-            images: driessamyn/kafkasnoop-wrap
+        id: meta-kafkasnoop-wrap
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: driessamyn/kafkasnoop-wrap
 
       - name: Push Docker image - kafkasnoop-wrap
         uses: akhilerm/tag-push-action@v2.0.0
