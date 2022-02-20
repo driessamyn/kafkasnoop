@@ -39,7 +39,7 @@ jobs:
         with:
           src: driessamyn/kafkasnoop
           dst: |
-            ${{ steps.meta.outputs.tags }}
+            ${{ steps.meta-kafksnoop.outputs.tags }}
             
       - name: Extract metadata (tags, labels) for Docker - kafkasnoop-avro
         id: meta-kafkasnoop-avro
@@ -52,7 +52,7 @@ jobs:
         with:
           src: driessamyn/kafkasnoop-avro
           dst: |
-            ${{ steps.meta.outputs.tags }}
+            ${{ steps.meta-kafkasnoop-avro.outputs.tags }}
             
       - name: Extract metadata (tags, labels) for Docker - kafkasnoop-wrap
         id: meta-kafkasnoop-wrap
@@ -65,4 +65,4 @@ jobs:
         with:
           src: driessamyn/kafkasnoop-wrap
           dst: |
-            ${{ steps.meta.outputs.tags }}
+            ${{ steps.meta-kafkasnoop-wrap.outputs.tags }}
