@@ -28,3 +28,7 @@ hs_err_pid*
 # Ignore Gradle build output directory
 build
 .idea
+
+# Application test data
+/examples/avro-with-envelope-fingerprint/schemas/*.avsc
+/schemas/*

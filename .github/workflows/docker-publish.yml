@@ -66,3 +66,16 @@ jobs:
           src: driessamyn/kafkasnoop-wrap
           dst: |
             ${{ steps.meta-kafkasnoop-wrap.outputs.tags }}
+
+      - name: Extract metadata (tags, labels) for Docker - kafkasnoop-test
+        id: meta-kafkasnoop-test
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: driessamyn/kafkasnoop-test
+
+      - name: Push Docker image - kafkasnoop-test
+        uses: akhilerm/tag-push-action@v2.0.0
+        with:
+          src: driessamyn/kafkasnoop-test
+          dst: |
+            ${{ steps.meta-kafkasnoop-test.outputs.tags }}
