@@ -1,6 +1,7 @@
 package kafkasnoop.serialisation.avro
 
 import com.papsign.ktor.openapigen.OpenAPIGen
+import com.papsign.ktor.openapigen.route.apiRouting
 import io.ktor.application.*
 import io.ktor.routing.*
 import io.ktor.server.engine.*
@@ -8,6 +9,7 @@ import io.ktor.server.netty.*
 import io.ktor.websocket.*
 import kafkasnoop.avro.SchemaRegistry
 import kafkasnoop.http.installContentNegotiation
+import kafkasnoop.serialisation.avro.routes.serialiserApiRoutes
 import kafkasnoop.serialisation.avro.routes.serialiserRoutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
@@ -46,6 +48,11 @@ fun Application.serialisationServer(
     }
 
     routing {
+        // NOTE: openAPI routing wasn't working, I think because of a bug in the binary payload handling
+        //  will come back to this later
         serialiserRoutes(schemaRegistry, messageEnvelopeOptions)
+    }
+    apiRouting {
+        serialiserApiRoutes(schemaRegistry)
     }
 }

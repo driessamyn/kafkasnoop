@@ -9,6 +9,6 @@ fun NormalOpenAPIRoute.snoopApiRoutes(
     kafkaClientFactory: KafkaClientFactory,
     messageDeserialiser: MessageDeserialiser
 ) {
-    route("/api").topics(kafkaClientFactory)
-    route("/api/{topic}").messages(kafkaClientFactory, messageDeserialiser)
+    route("/api/topics").topics(kafkaClientFactory)
+    route("/api/topics/{topic}").messages(kafkaClientFactory, messageDeserialiser)
 }

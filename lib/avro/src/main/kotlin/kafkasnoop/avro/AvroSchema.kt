@@ -28,6 +28,14 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
                         it.asString
                     }
                     .filter { !primitive.contains(it) }
+                    .map {
+                        // if the type doesn't contain . we assume the same namespace as the parent type
+                        // TODO: not sure if this is according to the AVRO spec
+                        if (it.contains('.'))
+                            it
+                        else
+                            "$ns.$it"
+                    }
                     .toList()
             } else {
                 emptyList()

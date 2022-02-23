@@ -53,7 +53,8 @@ class SchemaLoader(
 
         // NOTE: there's probably a much more efficient way of doing this.
         val ordered = mutableListOf<String>()
-        var remaining = all.keys
+        // take those with no dependencies first
+        var remaining = all.values.sortedBy { it.needs.count() }.map { it.fullName }
         while (remaining.isNotEmpty()) {
             val newRemaining = mutableListOf<String>()
             remaining
@@ -78,7 +79,7 @@ class SchemaLoader(
                 )
                 break
             }
-            remaining = newRemaining.toSet()
+            remaining = newRemaining
         }
 
         val schemaParser = Schema.Parser()
@@ -90,6 +91,9 @@ class SchemaLoader(
                 null
             }
         }.filterNotNull()
-        return schemaRegistryFactory.create(avroSchemas)
+        val schemaRegistry = schemaRegistryFactory.create(avroSchemas)
+        schemaRegistry.failedToParse.addAll(remaining.map { all[it] }.filterNotNull())
+
+        return schemaRegistry
     }
 }
