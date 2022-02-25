@@ -11,5 +11,7 @@ data class Partition(
     val offlineReplicas: Int,
 )
 
+data class ApiUrls(val get: String, val websocket: String)
+
 @Response("Kafka Topic")
-data class Topic(val name: String, val partitions: List<Partition>)
+data class Topic(val name: String, val partitions: List<Partition>, val urls: ApiUrls)

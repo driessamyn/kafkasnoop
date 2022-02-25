@@ -18,6 +18,7 @@ import kafkasnoop.routes.snoopApiRoutes
 import kafkasnoop.serialisation.ByteToStringService
 import kafkasnoop.serialisation.MessageDeserialiser
 import kafkasnoop.serialisation.avro.MessageSchemaOptions
+import kafkasnoop.serialisation.avro.routes.serialiserApiRoutes
 import kafkasnoop.serialisation.avro.routes.serialiserRoutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.slf4j.LoggerFactory
@@ -68,10 +69,13 @@ class Server(
         routing {
             openApi()
             messagesWs(kafkaClientFactory, deserialiser)
+            // NOTE: openAPI routing wasn't working, I think because of a bug in the binary payload handling
+            //  will come back to this later
             serialiserRoutes(schemaRegistry, messageEnvelopeOptions)
         }
         apiRouting {
             snoopApiRoutes(kafkaClientFactory, deserialiser)
+            serialiserApiRoutes(schemaRegistry)
         }
     }
 }

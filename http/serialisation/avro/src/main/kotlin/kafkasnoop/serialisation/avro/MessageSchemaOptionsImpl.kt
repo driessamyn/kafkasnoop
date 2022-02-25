@@ -73,7 +73,6 @@ class MessageSchemaOptionsImpl :
 
         logger.info("Initialising schemaRegistry with: $schemaPath")
 
-        val schemaLoader = SchemaLoader().createFromDir(schemaPath)
-        SchemaRegistry(schemaLoader.all)
+        SchemaLoader().createFromDir(schemaPath)
     }
 }

@@ -5,16 +5,18 @@ import com.papsign.ktor.openapigen.route.path.normal.NormalOpenAPIRoute
 import com.papsign.ktor.openapigen.route.path.normal.get
 import com.papsign.ktor.openapigen.route.response.respond
 import kafkasnoop.KafkaClientFactory
+import kafkasnoop.dto.ApiUrls
 import kafkasnoop.dto.Partition
 import kafkasnoop.dto.Topic
 import org.apache.kafka.common.TopicPartition
+import java.net.URLEncoder
 
 fun NormalOpenAPIRoute.topics(kafkaClientFactory: KafkaClientFactory) {
     get<Unit, List<Topic>>(
         info("Topics", "Get Topics and Partition Details"),
         example = listOf(
             Topic(
-                "topic",
+                "foo-topic",
                 listOf(
                     Partition(
                         0,
@@ -23,7 +25,8 @@ fun NormalOpenAPIRoute.topics(kafkaClientFactory: KafkaClientFactory) {
                         2,
                         1
                     )
-                )
+                ),
+                ApiUrls("/api/topics/foo-topic", "/ws/topics/foo-topic")
             )
         )
     ) {
@@ -38,6 +41,8 @@ fun NormalOpenAPIRoute.topics(kafkaClientFactory: KafkaClientFactory) {
                             val endOffsets = it.endOffsets(partitions)
                                 .map { o -> o.key.partition() to o.value }.toMap()
 
+                            val url = "topics/${URLEncoder.encode(t.key, Charsets.UTF_8)}"
+
                             Topic(
                                 t.key,
                                 t.value.map { p ->
@@ -48,7 +53,11 @@ fun NormalOpenAPIRoute.topics(kafkaClientFactory: KafkaClientFactory) {
                                         p.inSyncReplicas().count(),
                                         p.offlineReplicas().count()
                                     )
-                                }
+                                },
+                                ApiUrls(
+                                    "/api/$url",
+                                    "/ws/$url",
+                                )
                             )
                         }
                 )
