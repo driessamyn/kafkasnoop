@@ -51,16 +51,12 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
             }
 
             return if (elem.isJsonObject) {
-                extractNonPrimitiveTypes(elem.asJsonObject.get("type"))
-                extractNonPrimitiveTypes(elem.asJsonObject.get("items"))
+                extractNonPrimitiveTypes(elem.asJsonObject.get("type")) +
+                        extractNonPrimitiveTypes(elem.asJsonObject.get("items"))
             } else if (elem.isJsonArray) {
-                elem.asJsonArray.filter {
-                    if (it.isJsonPrimitive) {
-                        !primitive.contains(it.asString)
-                    } else {
-                        false
-                    }
-                }.map { it.asString }
+                elem.asJsonArray
+                    .filter { it.isJsonPrimitive && it.asString !in primitive }
+                    .map { it.asString }
             } else {
                 if (elem.isJsonPrimitive && !primitive.contains(elem.asString)) {
                     listOf(elem.asString)
