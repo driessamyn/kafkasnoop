@@ -1,15 +1,20 @@
 package kafkasnoop.avro
 
+import io.mockk.mockk
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.nio.file.Files
+import java.nio.file.Path
 
 class AvroSchemaTests {
+
     @Test
     fun `when simple schema needs nothing`() {
         val schema = """
             {
               "type" : "record",
-              "name" : "Engine",
+              "name" : "engine.avsc",
               "namespace" : "kafkasnoop.avro",
               "fields" : [ {
                 "name" : "size",
@@ -25,7 +30,7 @@ class AvroSchemaTests {
 
         SoftAssertions().apply {
             assertThat(schemaObj.schema).isEqualTo(schema)
-            assertThat(schemaObj.fullName).isEqualTo("kafkasnoop.avro.Engine")
+            assertThat(schemaObj.fullName).isEqualTo("kafkasnoop.avro.engine.avsc")
             assertThat(schemaObj.needs).isEmpty()
         }.assertAll()
     }
@@ -42,7 +47,7 @@ class AvroSchemaTests {
                 "type" : "kafkasnoop.avro.Car"
               }, {
                 "name" : "engine",
-                "type" : "kafkasnoop.avro.Engine"
+                "type" : "kafkasnoop.avro.engine.avsc"
               } ]
             }
         """.trimIndent()
@@ -54,7 +59,7 @@ class AvroSchemaTests {
             assertThat(schemaObj.fullName).isEqualTo("kafkasnoop.avro.Things")
             assertThat(schemaObj.needs).containsAll(
                 listOf(
-                    "kafkasnoop.avro.Car", "kafkasnoop.avro.Engine"
+                    "kafkasnoop.avro.Car", "kafkasnoop.avro.engine.avsc"
                 )
             )
         }.assertAll()

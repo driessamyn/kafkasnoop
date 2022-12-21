@@ -13,6 +13,16 @@
     "type" : "int"
   }, {
     "name" : "engine",
-    "type" : ["null", "kafkasnoop.avro.Engine", "kafkasnoop.avro.ElectricEngine"]
+    "type" : {
+      "type" : "record",
+      "name" : "Engine",
+      "fields" : [ {
+        "name" : "size",
+        "type" : "int"
+      }, {
+        "name" : "fuelType",
+        "type" : "string"
+      } ]
+    }
   } ]
 }

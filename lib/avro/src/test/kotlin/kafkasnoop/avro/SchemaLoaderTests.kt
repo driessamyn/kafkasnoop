@@ -33,7 +33,15 @@ class SchemaLoaderTests {
         "schemas/complex/things.avsc",
         "schemas/complex/car.avsc",
         "schemas/complex/engine.avsc",
+        "schemas/complex/electric-engine.avsc",
+        "schemas/complex/motor.avsc",
     )
+
+    val complexSchemas by lazy {
+        complexSchemaResources.map { f ->
+            schemaParser.parse(Files.readString(tempDir.resolve(f)))
+        }
+    }
 
     val factory = mockk<SchemaRegistryFactory>(relaxed = true)
 
@@ -102,13 +110,48 @@ class SchemaLoaderTests {
                 withArg { arg ->
                     assertThat(arg.map { it.fullName }).containsAll(
                         listOf(
+                            "kafkasnoop.avro.Motor",
                             "kafkasnoop.avro.Car",
                             "kafkasnoop.avro.Engine",
+                            "kafkasnoop.avro.ElectricEngine",
                             "kafkasnoop.avro.Things",
                         )
                     )
                 }
             )
         }
+    }
+
+    @Test
+    fun `when complex schema needs other schemas`() {
+        val loader = SchemaLoader(SchemaRegistryFactory())
+        val schemaSources = tempDir.resolve("schemas/complex").toFile().listFiles()!!.map { it.readText() }
+        val schemaRegistry = loader.createFromSchemaSources(schemaSources)
+
+        val parsedSchemas = schemaRegistry.all.toList()
+
+        assertThat(parsedSchemas.size).isEqualTo(5)
+        assertThat(parsedSchemas[0].name).containsAnyOf("Engine", "Motor")
+        assertThat(parsedSchemas[1].name).containsAnyOf("Engine", "Motor")
+        assertThat(parsedSchemas[2].name).isEqualTo("ElectricEngine")
+        assertThat(parsedSchemas[3].name).isEqualTo("Car")
+        assertThat(parsedSchemas[4].name).isEqualTo("Things")
+
+        //ensure schema order is shuffled
+        var shuffledSources: List<String>
+        do {
+            shuffledSources = schemaSources.shuffled()
+        } while (shuffledSources == schemaSources)
+
+        val shuffledSchemaRegistry = loader.createFromSchemaSources(schemaSources.shuffled())
+        val shuffledParsedSchemas = shuffledSchemaRegistry.all.toList()
+
+        assertThat(shuffledParsedSchemas.size).isEqualTo(5)
+        assertThat(shuffledParsedSchemas[0].name).containsAnyOf("Engine", "Motor")
+        assertThat(shuffledParsedSchemas[1].name).containsAnyOf("Engine", "Motor")
+        assertThat(shuffledParsedSchemas[2].name).isEqualTo("ElectricEngine")
+        assertThat(shuffledParsedSchemas[3].name).isEqualTo("Car")
+        assertThat(shuffledParsedSchemas[4].name).isEqualTo("Things")
+
     }
 }

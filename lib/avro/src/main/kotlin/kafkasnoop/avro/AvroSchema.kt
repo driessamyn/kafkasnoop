@@ -1,5 +1,6 @@
 package kafkasnoop.avro
 
+import com.google.gson.JsonElement
 import com.google.gson.JsonParser
 
 data class AvroSchema(val fullName: String, val needs: List<String>, val schema: String) {
@@ -13,7 +14,9 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
             "bytes",
             "string",
             "boolean",
+            "array",
         )
+
         fun create(schema: String): AvroSchema {
             val json = JsonParser.parseString(schema).asJsonObject
             val ns = json.get("namespace").asString
@@ -23,9 +26,8 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
                     .asSequence()
                     .filter { it.isJsonObject }
                     .map { it.asJsonObject.get("type") }
-                    .filter { it.isJsonPrimitive }
-                    .map {
-                        it.asString
+                    .flatMap {
+                        extractNonPrimitiveTypes(it)
                     }
                     .filter { !primitive.contains(it) }
                     .map {
@@ -41,6 +43,28 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
                 emptyList()
             }
             return AvroSchema("$ns.$name", needs, schema)
+        }
+
+        private fun extractNonPrimitiveTypes(elem: JsonElement?): List<String> {
+
+            if (elem == null) {
+                return emptyList()
+            }
+
+            return if (elem.isJsonObject) {
+                extractNonPrimitiveTypes(elem.asJsonObject.get("type")) +
+                        extractNonPrimitiveTypes(elem.asJsonObject.get("items"))
+            } else if (elem.isJsonArray) {
+                elem.asJsonArray
+                    .filter { it.isJsonPrimitive && it.asString !in primitive }
+                    .map { it.asString }
+            } else {
+                if (elem.isJsonPrimitive && !primitive.contains(elem.asString)) {
+                    listOf(elem.asString)
+                } else {
+                    emptyList()
+                }
+            }
         }
     }
 }

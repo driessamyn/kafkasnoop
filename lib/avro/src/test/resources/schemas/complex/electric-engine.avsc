@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ElectricEngine",
+  "namespace": "kafkasnoop.avro",
+  "fields": [
+    {
+      "name": "size",
+      "type": "int"
+    },
+    {
+      "name": "range",
+      "type": "int"
+    },
+    {
+      "name": "motors",
+      "doc": "Separate motors for each wheel",
+      "type": {
+        "type": "array",
+        "items": "kafkasnoop.avro.Motor"
+      }
+    }
+  ]
+}
