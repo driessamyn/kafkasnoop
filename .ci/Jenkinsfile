@@ -1,5 +1,14 @@
 pipeline {
-    agent { label 'docker' }
+    agent {
+        docker {
+            image 'build-zulu-openjdk:11'
+            label 'docker'
+            registryUrl 'https://engineering-docker.software.r3.com/'
+            registryCredentialsId 'artifactory-credentials'
+            args '-v /tmp:/host_tmp'
+            alwaysPull true
+        }
+    }
 
     stages {
         stage('Test') {
