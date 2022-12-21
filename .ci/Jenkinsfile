@@ -13,8 +13,7 @@ pipeline {
     stages {
         stage('Test') {
             steps {
-                sh './gradlew -version'
-                sh 'java -version'
+                sh './gradlew test'
             }
         }
     }
