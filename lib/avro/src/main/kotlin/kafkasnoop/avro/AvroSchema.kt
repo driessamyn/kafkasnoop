@@ -14,6 +14,7 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
             "bytes",
             "string",
             "boolean",
+            "array",
         )
 
         fun create(schema: String): AvroSchema {

@@ -1,0 +1,12 @@
+{
+  "type" : "record",
+  "name" : "Motor",
+  "namespace" : "kafkasnoop.avro",
+  "fields" : [ {
+    "name" : "power",
+    "type" : "int"
+  }, {
+    "name" : "torque",
+    "type" : "int"
+  } ]
+}

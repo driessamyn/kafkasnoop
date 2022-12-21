@@ -14,7 +14,7 @@ class DeserialiserTests {
 
     val parser = Schema.Parser()
     val carSchema = this::class.java
-        .getResourceAsStream("/schemas/simple/car.avsc").use { parser.parse(it) }
+        .getResourceAsStream("/schemas/simple/car-with-engine.avsc").use { parser.parse(it) }
     val superheroSchema = this::class.java
         .getResourceAsStream("/schemas/simple/superhero.avsc").use { parser.parse(it) }
     val carMessage = this::class.java
