@@ -131,8 +131,8 @@ class SchemaLoaderTests {
         val parsedSchemas = schemaRegistry.all.toList()
 
         assertThat(parsedSchemas.size).isEqualTo(5)
-        assertThat(parsedSchemas[0].name).isEqualTo("Engine")
-        assertThat(parsedSchemas[1].name).isEqualTo("Motor")
+        assertThat(parsedSchemas[0].name).containsAnyOf("Engine", "Motor")
+        assertThat(parsedSchemas[1].name).containsAnyOf("Engine", "Motor")
         assertThat(parsedSchemas[2].name).isEqualTo("ElectricEngine")
         assertThat(parsedSchemas[3].name).isEqualTo("Car")
         assertThat(parsedSchemas[4].name).isEqualTo("Things")
