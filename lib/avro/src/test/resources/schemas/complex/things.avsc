@@ -1,12 +1,31 @@
 {
-  "type" : "record",
-  "name" : "Things",
-  "namespace" : "kafkasnoop.avro",
-  "fields" : [ {
-    "name" : "car",
-    "type" : "kafkasnoop.avro.Car"
-  }, {
-    "name" : "engine",
-    "type" : "kafkasnoop.avro.Engine"
-  } ]
+  "type": "record",
+  "name": "Things",
+  "namespace": "kafkasnoop.avro",
+  "fields": [
+    {
+      "name": "car",
+      "type": {
+        "name": "CarType",
+        "type": "enum",
+        "doc": "",
+        "symbols": [
+          "AUDI",
+          "FORD",
+          "TOYOTA"
+        ]
+      }
+    },
+    {
+      "name": "engine",
+      "type": [
+        "null",
+        {
+          "type": "map",
+          "values": "Engine",
+          "default": {}
+        }
+      ]
+    }
+  ]
 }
