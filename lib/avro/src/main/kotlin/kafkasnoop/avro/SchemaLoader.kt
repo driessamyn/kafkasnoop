@@ -41,59 +41,57 @@ class SchemaLoader(
      * @param schemas in JSON format.
      */
     fun createFromSchemaSources(schemas: List<String>): SchemaRegistry {
-        val all = schemas.map {
+        val all = schemas.mapNotNull {
             try {
-                val schema = AvroSchema.create(it)
-                schema.fullName to schema
+                AvroSchema.create(it)
             } catch (e: Exception) {
                 logger.warn("Cannot parse JSON in schema $it")
                 null
             }
-        }.filterNotNull().toMap()
-
-        // NOTE: there's probably a much more efficient way of doing this.
-        val ordered = mutableListOf<String>()
-        // take those with no dependencies first
-        var remaining = all.values.sortedBy { it.needs.count() }.map { it.fullName }
-        while (remaining.isNotEmpty()) {
-            val newRemaining = mutableListOf<String>()
-            remaining
-                .filter { !ordered.contains(it) }
-                .map {
-                    val schema = all[it]!!
-                    if (schema.needs.isEmpty() || ordered.containsAll(schema.needs)) {
-                        ordered.add(it)
-                    } else {
-                        newRemaining.add(it)
-                    }
-                }
-
-            if (remaining.size == newRemaining.size) {
-                logger.warn(
-                    "Cannot parse the following schemas due to missing dependencies:\n " +
-                        "${remaining.map {
-                            "   $it: ${all[it]!!.needs}"
-                        }
-                        }\n" +
-                        "Has: $ordered"
-                )
-                break
-            }
-            remaining = newRemaining
         }
 
+        val schemasSortedByDependency = sortByDependencies(all)
+
         val schemaParser = Schema.Parser()
-        val avroSchemas = ordered.map {
+
+        val failedToParse = mutableListOf<AvroSchema>()
+        val avroSchemas = schemasSortedByDependency.map {
             try {
-                schemaParser.parse(all[it]!!.schema)
+                schemaParser.parse(it.schema)
             } catch (e: Exception) {
                 logger.warn("Could not parse schema $it: ${e.message}")
+                failedToParse.add(it)
                 null
             }
         }.filterNotNull()
         val schemaRegistry = schemaRegistryFactory.create(avroSchemas)
-        schemaRegistry.failedToParse.addAll(remaining.map { all[it] }.filterNotNull())
+        schemaRegistry.failedToParse.addAll(failedToParse)
 
         return schemaRegistry
+    }
+
+    private fun sortByDependencies(schemas: List<AvroSchema>): List<AvroSchema> {
+        val dependencies = schemas.associateBy({ it.fullName }, { it.needs.toMutableSet() })
+        val ready = dependencies.keys.filter { dependencies[it]!!.isEmpty() }.toMutableSet()
+        val sortedSchemas = mutableListOf<AvroSchema>()
+        while (ready.isNotEmpty()) {
+            val schemaName = ready.first()
+            sortedSchemas.add(schemas.first { it.fullName == schemaName })
+            ready.remove(schemaName)
+            // Search what other schemas depend on the current one
+            dependencies.forEach { (name, needs) ->
+                if (schemaName in needs) {
+                    needs.remove(schemaName)
+                    if (needs.isEmpty()) {
+                        ready.add(name)
+                    }
+                }
+            }
+        }
+        // If any schemas were not matched add them last
+        // There are schemas which define, e.g. enum avro type within their definition.
+        // Their dependency will be resolved by the avro parser
+        val unresolved = schemas.filterNot { it in sortedSchemas }
+        return sortedSchemas + unresolved
     }
 }

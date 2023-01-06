@@ -5,7 +5,7 @@ import com.google.gson.JsonParser
 
 data class AvroSchema(val fullName: String, val needs: List<String>, val schema: String) {
     companion object {
-        private val primitive = listOf(
+        private val primitiveTypes = listOf(
             "null",
             "int",
             "long",
@@ -14,7 +14,6 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
             "bytes",
             "string",
             "boolean",
-            "array",
         )
 
         fun create(schema: String): AvroSchema {
@@ -27,9 +26,9 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
                     .filter { it.isJsonObject }
                     .map { it.asJsonObject.get("type") }
                     .flatMap {
-                        extractNonPrimitiveTypes(it)
+                        extractObjectDependencies(it)
                     }
-                    .filter { !primitive.contains(it) }
+                    .filter { !primitiveTypes.contains(it) }
                     .map {
                         // if the type doesn't contain . we assume the same namespace as the parent type
                         // TODO: not sure if this is according to the AVRO spec
@@ -45,21 +44,37 @@ data class AvroSchema(val fullName: String, val needs: List<String>, val schema:
             return AvroSchema("$ns.$name", needs, schema)
         }
 
-        private fun extractNonPrimitiveTypes(elem: JsonElement?): List<String> {
+        private fun extractObjectDependencies(elem: JsonElement?): List<String> {
 
             if (elem == null) {
                 return emptyList()
             }
 
             return if (elem.isJsonObject) {
-                extractNonPrimitiveTypes(elem.asJsonObject.get("type")) +
-                        extractNonPrimitiveTypes(elem.asJsonObject.get("items"))
+                when (elem.asJsonObject.get("type").asString) {
+                    "enum" -> {
+                        extractObjectDependencies(elem.asJsonObject.get("name"))
+                    }
+                    "array" -> {
+                        extractObjectDependencies(elem.asJsonObject.get("items"))
+                    }
+                    "map" -> {
+                        extractObjectDependencies(elem.asJsonObject.get("values"))
+                    }
+                    else -> emptyList()
+                }
             } else if (elem.isJsonArray) {
-                elem.asJsonArray
-                    .filter { it.isJsonPrimitive && it.asString !in primitive }
-                    .map { it.asString }
+                val objectsInArray = elem.asJsonArray.filter { it.isJsonObject }
+                if (objectsInArray.isNotEmpty()) {
+                    objectsInArray.flatMap { extractObjectDependencies(it.asJsonObject) }
+                } else {
+                    elem.asJsonArray
+                        .filter { it.isJsonPrimitive && it.asString !in primitiveTypes }
+                        .map { it.asString }
+                }
+
             } else {
-                if (elem.isJsonPrimitive && !primitive.contains(elem.asString)) {
+                if (!primitiveTypes.contains(elem.asString)) {
                     listOf(elem.asString)
                 } else {
                     emptyList()
