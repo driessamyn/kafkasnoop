@@ -20,5 +20,10 @@ pipeline {
                 sh './gradlew test'
             }
         }
+        stage('Publish Image') {
+                    steps {
+                        sh './gradlew :http:snoop-wrap:jib'
+                    }
+                }
     }
 }
