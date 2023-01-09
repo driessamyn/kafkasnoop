@@ -61,6 +61,7 @@ jib {
     }
     to {
         image = "qa-docker-dev.software.r3.com/kafkasnoop-wrap"
+        tags = setOf(project.version.toString())
         auth {
             username = System.getenv("CORDA_ARTIFACTORY_USERNAME")
             password = System.getenv("CORDA_ARTIFACTORY_PASSWORD")
