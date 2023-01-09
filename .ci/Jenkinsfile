@@ -24,9 +24,10 @@ pipeline {
             }
         }
         stage('Publish Image') {
-                    steps {
-                        sh './gradlew :http:snoop-wrap:jib'
-                    }
-                }
+            steps {
+                sh './gradlew copyDependencyFiles'
+                sh './gradlew :http:snoop-wrap:jib'
+            }
+        }
     }
 }
