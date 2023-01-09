@@ -87,6 +87,5 @@ val copyDependencyFiles by tasks.registering(Copy::class) {
     include("**/*.avsc")
     includeEmptyDirs = false
     into("$rootDir/schemas")
-
 }
 
