@@ -25,7 +25,7 @@ pipeline {
         }
         stage('Publish Image') {
             steps {
-                sh './gradlew copyDependencyFiles'
+                sh './gradlew copyAvroSchemaDependencies'
                 sh './gradlew :http:snoop-wrap:jib'
             }
         }

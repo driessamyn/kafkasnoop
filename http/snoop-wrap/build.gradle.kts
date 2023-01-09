@@ -78,11 +78,11 @@ application {
     mainClass.set("kafkasnoop.wrap.AppKt")
 }
 
-val copyDependencyFiles by tasks.registering(Copy::class) {
+val copyAvroSchemaDependencies by tasks.registering(Copy::class) {
     val jarToCopyFrom = configurations["cordaApiDependencies"]
         .filter { it.name.endsWith("jar") }
-        .filter { it.name.contains("corda-avro-schema") }.map { zipTree(it) }
-    println(jarToCopyFrom)
+        .filter { it.name.contains("corda-avro-schema") }
+        .map { zipTree(it) }
     from(jarToCopyFrom)
     include("**/*.avsc")
     includeEmptyDirs = false
