@@ -34,35 +34,39 @@ class MessageProcessor(
         }
     }
 
-    fun startProcess(partition: TopicPartition, maxMsgCount: Int = Int.MAX_VALUE, minOffset: Long = 0L): Flow<Message> =
+    fun startProcess(partition: TopicPartition, maxMsgCount: Int = Int.MAX_VALUE, minOffset: Long? = null): Flow<Message> =
         flow {
             kafkaClientFactory.createConsumer().use { kafkaConsumer ->
                 kafkaConsumer.assign(listOf(partition))
-                val beggingOffsets = kafkaConsumer.beginningOffsets(partitions)
-                val endOffsets = kafkaConsumer.endOffsets(partitions)
 
-                // default to rewinding to 5 or max msg count
-                logger.debug("Min offset for partition $partition is ${beggingOffsets[partition]}")
-                logger.debug("Max offset for partition $partition is ${endOffsets[partition]}")
-                val startOffset = max(endOffsets[partition]?.minus(maxMsgCount) ?: 0L, 0L)
-                val offset = max(startOffset, minOffset)
-                val messageCount = max(endOffsets.getOrDefault(partition, 0) - offset, maxMsgCount.toLong())
-                logger.info("Loading $messageCount from $partition starting at $offset")
+                var offset = if (minOffset != null) {
+                    minOffset
+                } else {
+                    val beginningOffsets = kafkaConsumer.beginningOffsets(partitions)
+                    val endOffsets = kafkaConsumer.endOffsets(partitions)
+                    logger.debug("Min offset for partition $partition is ${beginningOffsets[partition]}")
+                    logger.debug("Max offset for partition $partition is ${endOffsets[partition]}")
+                    val startOffset = max(endOffsets[partition]?.minus(maxMsgCount) ?: 0L, 0L)
+                    startOffset
+                }
+
+                logger.info("Trying to load $maxMsgCount from $partition starting at $offset")
                 kafkaConsumer.seek(partition, offset)
 
                 var messagesLoaded = 0
                 var emptyPolls = 0
-                // TODO: tidy-up this logic.
-                while (!isClosed &&  emptyPolls <= 5 && messagesLoaded < messageCount) {
+                while (!isClosed && emptyPolls <= 5 && messagesLoaded < maxMsgCount) {
                     logger.debug("Polling $partition from ${kafkaConsumer.position(partition)}")
                     val msgs = kafkaConsumer
-                        .poll(Duration.ofMillis(200)).records(partition)
+                        .poll(Duration.ofMillis(200))
+                        .records(partition)
                         .map { record ->
                             logger.debug("Found message $partition: ${record.offset()}")
                             val key = messageDeserialiser.deserialise(record.key() ?: ByteArray(0))
                             val value = messageDeserialiser.deserialise(record.value() ?: ByteArray(0))
                             Message(record.offset(), partition.toString(), key, value, Instant.ofEpochMilli(record.timestamp()))
-                        }
+                        }.sortedBy { it.offset }
+                        .take(maxMsgCount)
 
                     if (msgs.isEmpty()) {
                         emptyPolls += 1
@@ -70,13 +74,14 @@ class MessageProcessor(
                         Thread.sleep(200)
                     } else {
                         logger.debug("Found ${msgs.count()} on $topicName: ${msgs.groupBy { it.partition }.map { it.key to it.value.maxOf { it.offset } }.toMap()}")
-                        val sortedMsgs = msgs.sortedBy { it.offset }
-                        logger.debug("Found $sortedMsgs on $partition")
-                        sortedMsgs.forEach { emit(it) }
+                        logger.debug("Found $msgs on $partition")
+                        msgs.forEach { emit(it) }
                         emptyPolls = 0
                     }
                     messagesLoaded += msgs.count()
-                    logger.debug("Loaded $messagesLoaded out of $messageCount")
+                    offset += messagesLoaded
+                    kafkaConsumer.seek(partition, offset)
+                    logger.debug("Loaded $messagesLoaded out of $maxMsgCount")
                 }
                 logger.debug("stopping to process")
             }
