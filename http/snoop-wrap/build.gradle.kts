@@ -60,7 +60,8 @@ jib {
         }
     }
     to {
-        image = "qa-docker-dev.software.r3.com/kafkasnoop-wrap"
+//        image = "qa-docker-dev.software.r3.com/kafkasnoop-wrap"
+        image = "pavelnenov/kafkasnoop-wrap"
         tags = setOf(project.version.toString(), "latest")
         auth {
             username = System.getenv("CORDA_ARTIFACTORY_USERNAME")
